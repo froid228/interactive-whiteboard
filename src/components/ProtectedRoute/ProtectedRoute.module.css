@@ -1,0 +1,19 @@
+.forbidden {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  text-align: center;
+  color: #dc3545;
+}
+
+.forbidden h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.forbidden p {
+  color: #666;
+  margin-bottom: 20px;
+}

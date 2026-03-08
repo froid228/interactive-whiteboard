@@ -1,0 +1,25 @@
+/* ... существующие стили ... */
+
+.tool.active {
+  background-color: #61dafb;
+  border-color: #4fa8c7;
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.3);
+}
+
+.colorPicker {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+
+.colorPicker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.colorPicker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}

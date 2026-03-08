@@ -1,0 +1,50 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+}
+
+.boardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.boardHeader h2 {
+  margin: 0;
+  color: #282c34;
+}
+
+.boardHeader a {
+  color: #61dafb;
+  text-decoration: none;
+}
+
+.canvasArea {
+  flex: 1;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.canvasArea p {
+  color: #ccc;
+  font-size: 1.1rem;
+}
+.chatLink {
+  padding: 8px 16px;
+  background-color: #61dafb;
+  color: #282c34;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.chatLink:hover {
+  background-color: #4fa8c7;
+}
