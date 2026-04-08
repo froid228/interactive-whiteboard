@@ -28,6 +28,9 @@
 .userName {
   font-size: 0.9rem;
   opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .logoutBtn {
@@ -57,4 +60,19 @@
 
 .loginLink:hover {
   background-color: #4fa8c7;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 20px;
+  }
+  
+  .title {
+    font-size: 1.2rem;
+  }
+  
+  .userName {
+    font-size: 0.8rem;
+  }
 }

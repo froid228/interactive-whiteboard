@@ -23,7 +23,10 @@ function Header() {
       <div className={classes.user}>
         {isAuthenticated && user ? (
           <>
-            <span className={classes.userName}>👤 {user.name}</span>
+            <span className={classes.userName}>
+              👤 {user.name}
+              {user.role === 'admin' && ' 👑'}
+            </span>
             <button onClick={handleLogout} className={classes.logoutBtn}>
               Выход
             </button>

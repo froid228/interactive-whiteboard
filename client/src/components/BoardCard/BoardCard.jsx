@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import classes from './BoardCard.module.css';
 
 // Оптимизация: React.memo предотвращает лишний ререндер
-const BoardCard = React.memo(({ id, title, lastModified }) => {
+const BoardCard = React.memo(({ id, title, lastModified, onDelete, onEdit }) => {
   return (
     <div className={classes.card}>
       <Link to={`/board/${id}`} className={classes.cardLink}>
@@ -14,6 +14,22 @@ const BoardCard = React.memo(({ id, title, lastModified }) => {
           </p>
         )}
       </Link>
+      <div className={classes.actions}>
+        <button
+          type="button"
+          className={classes.editBtn}
+          onClick={onEdit}
+        >
+          Редактировать
+        </button>
+        <button
+          type="button"
+          className={classes.deleteBtn}
+          onClick={onDelete}
+        >
+          Удалить
+        </button>
+      </div>
     </div>
   );
 });
