@@ -1,20 +1,24 @@
 {
   "name": "whiteboard-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Realtime collaborative whiteboard backend",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "fuzz": "node scripts/fuzz-api.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.18.0",
-    "pg": "^8.11.0"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.0",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

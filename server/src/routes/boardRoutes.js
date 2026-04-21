@@ -1,32 +1,59 @@
 const express = require('express');
-const router = express.Router();
 const boardController = require('../controllers/boardController');
+const { authRequired } = require('../middleware/auth');
 const checkRole = require('../middleware/roleCheck');
 
-// Все маршруты с проверкой роли (Практики 7 и 8)
-router.post('/', 
-  checkRole(['admin', 'user']), 
-  boardController.create.bind(boardController)
-);
+const router = express.Router();
 
-router.get('/', 
-  checkRole(['admin', 'user']), 
-  boardController.getAll.bind(boardController)
-);
+router.use(authRequired);
+router.use(checkRole(['admin', 'user']));
 
-router.get('/:id', 
-  checkRole(['admin', 'user']), 
-  boardController.getById.bind(boardController)
-);
+router.post('/', async (req, res, next) => {
+  try {
+    await boardController.create(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
-router.put('/:id', 
-  checkRole(['admin', 'user']), 
-  boardController.update.bind(boardController)
-);
+router.get('/', async (req, res, next) => {
+  try {
+    await boardController.getAll(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
-router.delete('/:id', 
-  checkRole(['admin', 'user']), 
-  boardController.delete.bind(boardController)
-);
+router.get('/:id', async (req, res, next) => {
+  try {
+    await boardController.getById(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:id', async (req, res, next) => {
+  try {
+    await boardController.update(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/share', async (req, res, next) => {
+  try {
+    await boardController.share(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await boardController.delete(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
