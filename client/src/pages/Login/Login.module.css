@@ -3,20 +3,86 @@
   display: grid;
   place-items: center;
   padding: 32px 18px;
+  position: relative;
+  overflow: hidden;
 }
 
 .loginCard {
   width: min(100%, 520px);
-  padding: 32px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 34px;
+  border-radius: 32px;
+  background: rgba(4, 9, 24, 0.8);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.38);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  color: #f8fafc;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(18px);
+  animation: cardEnter 0.8s ease both;
+}
+
+.heading {
+  animation: fadeSlideUp 0.8s ease both;
+}
+
+.backgroundAura {
+  position: absolute;
+  inset: 12% 20% auto auto;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.28), transparent 70%);
+  filter: blur(18px);
+  animation: floatAura 11s ease-in-out infinite;
+}
+
+.backgroundGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black 42%, transparent 92%);
+  pointer-events: none;
+}
+
+.waveTop,
+.waveBottom {
+  position: absolute;
+  width: 520px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  filter: blur(0.2px);
+  opacity: 0.9;
+}
+
+.waveTop {
+  top: -120px;
+  right: -120px;
+  transform: rotate(18deg);
+  box-shadow:
+    0 0 0 18px rgba(96, 165, 250, 0.08),
+    0 0 0 42px rgba(96, 165, 250, 0.06),
+    0 0 0 66px rgba(96, 165, 250, 0.04);
+  animation: driftTop 18s linear infinite;
+}
+
+.waveBottom {
+  bottom: -140px;
+  left: -120px;
+  transform: rotate(-14deg);
+  box-shadow:
+    0 0 0 18px rgba(14, 165, 233, 0.08),
+    0 0 0 42px rgba(14, 165, 233, 0.06),
+    0 0 0 66px rgba(14, 165, 233, 0.04);
+  animation: driftBottom 22s linear infinite;
 }
 
 .kicker {
   margin: 0 0 12px;
-  color: #ea580c;
+  color: #bfdbfe;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.78rem;
@@ -25,12 +91,16 @@
 
 .title {
   margin: 0;
-  font-size: 2rem;
+  font-size: clamp(2.3rem, 4vw, 3.35rem);
+  line-height: 0.96;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #60a5fa;
+  text-shadow: 0 0 32px rgba(96, 165, 250, 0.2);
 }
 
 .subtitle {
   margin: 12px 0 24px;
-  color: #475569;
+  color: rgba(226, 232, 240, 0.82);
   line-height: 1.6;
 }
 
@@ -39,25 +109,33 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 24px;
+  animation: fadeSlideUp 0.8s ease 0.08s both;
 }
 
 .modeButton,
 .modeActive {
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 12px;
-  background: #e2e8f0;
-  color: #334155;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease;
 }
 
 .modeActive {
-  background: #0f172a;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.82), rgba(8, 145, 178, 0.8));
   color: #fff;
+}
+
+.modeButton:hover,
+.modeActive:hover {
+  transform: translateY(-1px);
 }
 
 .form {
   display: grid;
   gap: 18px;
+  animation: fadeSlideUp 0.9s ease 0.14s both;
 }
 
 .inputGroup {
@@ -65,22 +143,355 @@
   gap: 8px;
 }
 
+.inputGroup label {
+  color: #e2e8f0;
+}
+
 .input {
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 16px;
+  padding: 15px 16px;
+  background: rgba(15, 23, 42, 0.62);
+  color: #f8fafc;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.input::placeholder {
+  color: rgba(203, 213, 225, 0.46);
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.8);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.14);
+  transform: translateY(-1px);
+}
+
+.passwordField {
+  position: relative;
+}
+
+.passwordFieldInteractive {
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 8, 23, 0.82)),
+    #020617;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.passwordFieldInteractive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.14), transparent 28%, transparent 72%, rgba(96, 165, 250, 0.1));
+  pointer-events: none;
+}
+
+.passwordInput {
+  position: relative;
+  z-index: 2;
+  padding-right: 64px;
+}
+
+.revealDemoInput {
+  min-height: 64px;
+}
+
+.passwordFieldInteractive .passwordInput {
+  background: transparent;
+  border: none;
+}
+
+.passwordFieldInteractive .passwordInput:focus {
+  box-shadow: none;
+  transform: none;
+}
+
+.revealShowcase {
+  margin-top: 26px;
+  padding: 26px 24px 24px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.96), rgba(2, 6, 23, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: fadeSlideUp 1s ease 0.24s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.revealShowcase::before {
+  content: '';
+  position: absolute;
+  top: -46px;
+  right: -24px;
+  width: 220px;
+  height: 160px;
+  border-radius: 50%;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  box-shadow:
+    0 0 0 18px rgba(96, 165, 250, 0.08),
+    0 0 0 38px rgba(96, 165, 250, 0.05),
+    0 0 0 58px rgba(96, 165, 250, 0.03);
+  transform: rotate(22deg);
+  pointer-events: none;
+}
+
+.revealAuthor {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #020617;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.revealTitle {
+  margin: 18px 0 0;
+  color: #60a5fa;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 0.96;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.revealSubtitle {
+  margin: 6px 0 36px;
+  color: #f8fafc;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.1rem;
+}
+
+.revealPrompt {
+  display: block;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.06em;
+}
+
+.revealShell {
+  position: relative;
+}
+
+.revealInputFrame {
+  position: relative;
+  min-height: 64px;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.passwordRevealLayer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 0 62px 0 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.passwordRevealLabel {
+  display: none;
+}
+
+.passwordRevealViewport {
+  position: absolute;
+  left: 16px;
+  right: 62px;
+  top: 50%;
+  height: 28px;
+  transform: translateY(-50%);
+  overflow: hidden;
+}
+
+.passwordHiddenText,
+.passwordRevealText {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  color: #e2e8f0;
+  white-space: nowrap;
+  transition: opacity 0.36s ease, transform 0.36s ease, filter 0.36s ease;
+}
+
+.passwordHiddenTextIn {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.passwordHiddenTextOut {
+  opacity: 0;
+  transform: translateY(-16px);
+  filter: blur(5px);
+}
+
+.passwordHiddenPlaceholder {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+}
+
+.passwordRevealDots {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  height: 22px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.passwordRevealDotsActive {
+  opacity: 1;
+}
+
+.passwordRevealDots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(96, 165, 250, 0.95);
+  opacity: 0;
+  transform: translateY(6px) scale(0.6);
+}
+
+.revealDemoButton {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.revealDemoButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.revealDemoButton:disabled {
+  opacity: 0.9;
+}
+
+.passwordRevealDotsActive span:nth-child(1) {
+  animation: revealDotPulse 0.8s ease-in-out infinite;
+}
+
+.passwordRevealDotsActive span:nth-child(2) {
+  animation: revealDotPulse 0.8s ease-in-out 0.12s infinite;
+}
+
+.passwordRevealDotsActive span:nth-child(3) {
+  animation: revealDotPulse 0.8s ease-in-out 0.24s infinite;
+}
+
+.passwordRevealText {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(4px);
+}
+
+.passwordRevealTextIdle {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(6px);
+}
+
+.passwordRevealTextProcessing {
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+}
+
+.passwordRevealTextIn {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.passwordFieldAnimatedReveal .passwordRevealTextIn {
+  animation: revealPasswordText 0.46s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.revealButton {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+  z-index: 3;
+  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.revealButton:hover {
+  background: rgba(96, 165, 250, 0.18);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+}
+
+.revealButton:disabled {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.revealButtonOpen {
+  transform: scale(1.04);
+}
+
+.revealChevron {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+  transform: rotate(45deg);
+  transition: transform 0.35s ease;
+}
+
+.revealButtonOpen .revealChevron {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+.passwordHint {
+  margin: 4px 0 0;
+  color: rgba(191, 219, 254, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .submitBtn,
 .demoBtn {
   border: none;
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #ea580c, #f59e0b);
+  border-radius: 16px;
+  padding: 15px 16px;
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
   color: #fff;
   font-weight: 700;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+}
+
+.submitBtn:hover:not(:disabled),
+.demoBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
+  filter: saturate(1.08);
 }
 
 .submitBtn:disabled {
@@ -89,17 +500,24 @@
 
 .error {
   padding: 12px 14px;
-  border-radius: 14px;
-  background: #fee2e2;
-  color: #991b1b;
+  border-radius: 16px;
+  background: rgba(127, 29, 29, 0.45);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.22);
 }
 
 .demo {
   margin-top: 24px;
   padding: 18px;
-  border-radius: 20px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.56);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  animation: fadeSlideUp 1s ease 0.2s both;
+}
+
+.demo p {
+  color: #cbd5e1;
+  margin-top: 0;
 }
 
 .demoButtons {
@@ -109,16 +527,144 @@
 }
 
 .demoBtn {
-  background: #0f766e;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
 }
 
 .demo code {
   display: block;
   margin-top: 8px;
+  color: #bfdbfe;
 }
 
 .backLink {
   display: inline-block;
   margin-top: 18px;
-  color: #0f172a;
+  color: #e2e8f0;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.backLink:hover {
+  color: #7dd3fc;
+  transform: translateX(4px);
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatAura {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-26px, 22px, 0);
+  }
+}
+
+@keyframes driftTop {
+  from {
+    transform: rotate(18deg) translateX(0);
+  }
+  to {
+    transform: rotate(18deg) translateX(-26px);
+  }
+}
+
+@keyframes driftBottom {
+  from {
+    transform: rotate(-14deg) translateX(0);
+  }
+  to {
+    transform: rotate(-14deg) translateX(24px);
+  }
+}
+
+@keyframes blinkDots {
+  0%,
+  100% {
+    opacity: 0.25;
+    letter-spacing: 0.06em;
+  }
+  50% {
+    opacity: 0.92;
+    letter-spacing: 0.18em;
+  }
+}
+
+@keyframes revealDotPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateY(-4px) scale(0.8);
+  }
+}
+
+@keyframes revealPasswordText {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(6px);
+    letter-spacing: 0.16em;
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(1px);
+    filter: blur(0);
+    letter-spacing: 0.1em;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    letter-spacing: 0.08em;
+  }
+}
+
+@media (max-width: 640px) {
+  .loginCard {
+    padding: 26px 20px;
+  }
+
+  .waveTop,
+  .waveBottom {
+    opacity: 0.45;
+  }
+
+  .demoButtons {
+    flex-direction: column;
+  }
+
+  .revealShowcase {
+    padding: 22px 18px 20px;
+  }
 }

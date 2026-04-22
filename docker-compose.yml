@@ -5,8 +5,11 @@ services:
       POSTGRES_DB: whiteboard
       POSTGRES_USER: whiteboard
       POSTGRES_PASSWORD: whiteboard
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whiteboard -d whiteboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -14,7 +17,8 @@ services:
     build:
       context: ./server
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       PORT: 5001
       CLIENT_ORIGIN: http://localhost:3000
@@ -25,6 +29,7 @@ services:
       DB_PASSWORD: whiteboard
       JWT_SECRET: super-secret-key
       NODE_ENV: development
+    restart: on-failure
     ports:
       - "5001:5001"
 
