@@ -188,11 +188,21 @@
 
 .info,
 .error {
-  margin: 12px 0;
+  margin: 12px 0 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .error {
   color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(254, 242, 242, 0.92);
+}
+
+.info {
+  color: #0f172a;
 }
 
 .grid {
@@ -202,14 +212,71 @@
 }
 
 .emptyState {
+  display: grid;
+  gap: 14px;
   padding: 28px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 26%),
+    rgba(255, 255, 255, 0.82);
   border: 1px dashed #94a3b8;
 }
 
 .emptyState h3 {
   margin-top: 0;
+  margin-bottom: 0;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #475569;
+}
+
+.emptyIllustration {
+  position: relative;
+  min-height: 110px;
+  border-radius: 18px;
+  background:
+    linear-gradient(transparent 23px, rgba(148, 163, 184, 0.12) 24px),
+    linear-gradient(90deg, transparent 23px, rgba(148, 163, 184, 0.12) 24px),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  background-size: 24px 24px, 24px 24px, auto;
+  overflow: hidden;
+}
+
+.emptyCircle,
+.emptyLineLong,
+.emptyLineShort {
+  position: absolute;
+  display: block;
+}
+
+.emptyCircle {
+  top: 28px;
+  left: 28px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.18);
+}
+
+.emptyLineLong {
+  top: 34px;
+  left: 58px;
+  width: 134px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #60a5fa);
+}
+
+.emptyLineShort {
+  top: 64px;
+  left: 28px;
+  width: 94px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2dd4bf, #22c55e);
 }
 
 @media (max-width: 900px) {

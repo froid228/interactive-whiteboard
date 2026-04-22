@@ -171,12 +171,17 @@ function Home() {
         </Link>
       </div>
 
-      {error && <p className={classes.error}>Ошибка: {error}</p>}
-      {loading && <p className={classes.info}>Загрузка данных...</p>}
+      {error && <div className={classes.error}>Ошибка: {error}</div>}
+      {loading && <div className={classes.info}>Загрузка досок и синхронизация рабочего пространства...</div>}
 
       <div className={classes.grid}>
         {boards.length === 0 && !loading ? (
           <div className={classes.emptyState}>
+            <div className={classes.emptyIllustration} aria-hidden="true">
+              <span className={classes.emptyCircle} />
+              <span className={classes.emptyLineLong} />
+              <span className={classes.emptyLineShort} />
+            </div>
             <h3>Пока нет доступных досок</h3>
             <p>Создай первую доску или попроси владельца выдать тебе доступ к уже существующей.</p>
           </div>

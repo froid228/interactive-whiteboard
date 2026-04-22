@@ -12,6 +12,21 @@ function About() {
           Это онлайн-пространство для совместного обсуждения идей, рисования схем, фиксации заметок
           и визуальной командной работы на общем холсте.
         </p>
+
+        <div className={classes.heroStrip}>
+          <div className={classes.heroMetric}>
+            <span>Совместный холст</span>
+            <strong>одна доска для всей команды</strong>
+          </div>
+          <div className={classes.heroMetric}>
+            <span>Живые изменения</span>
+            <strong>видно, кто и что делает прямо сейчас</strong>
+          </div>
+          <div className={classes.heroMetric}>
+            <span>Контроль доступа</span>
+            <strong>доски доступны только нужным участникам</strong>
+          </div>
+        </div>
       </div>
 
       <div className={classes.grid}>
