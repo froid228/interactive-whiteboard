@@ -132,10 +132,10 @@ function Login() {
 
       <div className={classes.loginCard}>
         <div className={classes.heading}>
-          <p className={classes.kicker}>Курсовой проект</p>
+          <p className={classes.kicker}>Interactive Whiteboard</p>
           <h1 className={classes.title}>{title}</h1>
           <p className={classes.subtitle}>
-            Авторизация идёт через backend API, а доступ к доскам определяется ролью пользователя.
+            Войди в пространство совместной работы, открывай доски и рисуй вместе с командой в реальном времени.
           </p>
         </div>
 
@@ -197,48 +197,7 @@ function Login() {
 
           <div className={classes.inputGroup}>
             <label htmlFor="password">Пароль</label>
-            <div
-              className={`${classes.passwordField} ${
-                showPassword ? classes.passwordFieldRevealed : classes.passwordFieldHidden
-              } ${isRegisterMode ? classes.passwordFieldInteractive : ''} ${
-                revealState === 'processing' ? classes.passwordFieldProcessing : ''
-              } ${revealState === 'revealed' ? classes.passwordFieldAnimatedReveal : ''}`}
-            >
-              {isRegisterMode && (
-                <div className={classes.passwordRevealLayer} aria-hidden="true">
-                  <span className={classes.passwordRevealLabel}>Password Reveal</span>
-                  <span className={classes.passwordRevealViewport}>
-                    <span
-                      className={`${classes.passwordHiddenText} ${
-                        revealState === 'revealed' ? classes.passwordHiddenTextOut : classes.passwordHiddenTextIn
-                      } ${!formData.password ? classes.passwordHiddenPlaceholder : ''}`}
-                    >
-                      {hiddenPreview}
-                    </span>
-                    <span
-                      className={`${classes.passwordRevealText} ${
-                        revealState === 'revealed'
-                          ? classes.passwordRevealTextIn
-                          : revealState === 'processing'
-                            ? classes.passwordRevealTextProcessing
-                            : classes.passwordRevealTextIdle
-                      }`}
-                    >
-                      {revealPreview}
-                    </span>
-                  </span>
-                  <span
-                    className={`${classes.passwordRevealDots} ${
-                      revealState === 'processing' ? classes.passwordRevealDotsActive : ''
-                    }`}
-                  >
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                </div>
-              )}
-
+            <div className={classes.passwordField}>
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
@@ -253,7 +212,7 @@ function Login() {
 
               <button
                 type="button"
-                className={`${classes.revealButton} ${showPassword ? classes.revealButtonOpen : ''}`}
+                className={`${classes.passwordToggle} ${showPassword ? classes.revealButtonOpen : ''}`}
                 onClick={() => setShowPassword((current) => !current)}
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               >
@@ -270,7 +229,7 @@ function Login() {
         </form>
 
         <div className={classes.demo}>
-          <p>Быстрый вход для проверки ролей:</p>
+          <p>Тестовые аккаунты для входа:</p>
           <div className={classes.demoButtons}>
             <button type="button" onClick={() => fillDemo('admin')} className={classes.demoBtn}>
               Админ

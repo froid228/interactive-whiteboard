@@ -6,6 +6,13 @@ const BoardCard = React.memo(({ id, title, ownerName, isCollaborator, lastModifi
   return (
     <article className={classes.card}>
       <Link to={`/board/${id}`} className={classes.cardLink}>
+        <div className={classes.preview} aria-hidden="true">
+          <span className={classes.previewDot} />
+          <span className={classes.previewLineLong} />
+          <span className={classes.previewLineShort} />
+          <span className={classes.previewShape} />
+        </div>
+
         <div className={classes.cardHeader}>
           <span className={classes.badge}>{isCollaborator ? 'Совместная' : 'Моя доска'}</span>
           <h3 className={classes.cardTitle}>{title}</h3>
@@ -16,6 +23,11 @@ const BoardCard = React.memo(({ id, title, ownerName, isCollaborator, lastModifi
           {lastModified && (
             <span>Обновлено: {new Date(lastModified).toLocaleString('ru-RU')}</span>
           )}
+        </div>
+
+        <div className={classes.cardFooter}>
+          <span className={classes.openLabel}>Открыть доску</span>
+          <span className={classes.arrow}>↗</span>
         </div>
       </Link>
 

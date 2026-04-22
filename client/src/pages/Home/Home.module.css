@@ -7,8 +7,8 @@
 
 .heroContent {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 22px;
+  grid-template-columns: 1fr;
+  gap: 28px;
   padding: 36px;
   border-radius: 34px;
   background:
@@ -16,10 +16,13 @@
     linear-gradient(140deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.92));
   color: #f8fafc;
   box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
 }
 
 .heroText {
-  align-self: center;
+  display: grid;
+  gap: 24px;
+  align-self: start;
 }
 
 .kicker {
@@ -40,7 +43,7 @@
 .description,
 .subtitle {
   max-width: 760px;
-  margin: 18px 0 0;
+  margin: 0;
   color: rgba(248, 250, 252, 0.82);
   line-height: 1.7;
 }
@@ -51,8 +54,9 @@
 
 .heroActions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-top: 28px;
 }
 
 .primaryLink,
@@ -61,12 +65,14 @@
   text-decoration: none;
   border-radius: 999px;
   padding: 14px 18px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
 }
 
 .primaryLink {
   background: #f59e0b;
   color: #0f172a;
   font-weight: 700;
+  box-shadow: 0 16px 34px rgba(245, 158, 11, 0.28);
 }
 
 .secondaryLink {
@@ -74,10 +80,17 @@
   color: #f8fafc;
 }
 
+.primaryLink:hover,
+.secondaryLink:hover,
+.inlineLink:hover,
+.button:hover {
+  transform: translateY(-2px);
+}
+
 .heroPanel {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  align-content: end;
 }
 
 .heroStat {
@@ -102,8 +115,8 @@
 }
 
 .topline {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
   align-items: end;
   margin-bottom: 22px;
@@ -134,18 +147,17 @@
 }
 
 .commandBar {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: center;
+  display: grid;
+  gap: 16px;
   margin-bottom: 18px;
+  align-items: start;
 }
 
 .form {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
-  flex: 1;
+  align-items: center;
 }
 
 .input {
@@ -153,6 +165,7 @@
   border-radius: 18px;
   padding: 16px 18px;
   background: rgba(255, 255, 255, 0.88);
+  min-width: 0;
 }
 
 .button {
@@ -162,12 +175,15 @@
   background: linear-gradient(135deg, #0f766e, #14b8a6);
   color: #fff;
   font-weight: 700;
+  box-shadow: 0 18px 34px rgba(20, 184, 166, 0.2);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
 }
 
 .inlineLink {
+  width: fit-content;
   border: 1px solid rgba(15, 23, 42, 0.12);
   color: #0f172a;
-  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .info,
@@ -197,11 +213,12 @@
 }
 
 @media (max-width: 900px) {
-  .heroContent,
-  .topline,
-  .commandBar {
+  .topline {
     grid-template-columns: 1fr;
-    display: grid;
+  }
+
+  .heroPanel {
+    grid-template-columns: 1fr;
   }
 
   .heroActions {

@@ -103,10 +103,10 @@ function Home() {
         <div className={classes.heroContent}>
           <div className={classes.heroText}>
             <p className={classes.kicker}>Realtime collaboration studio</p>
-            <h1 className={classes.homeTitle}>Интерактивная доска для командной работы, прототипирования и защиты курсового проекта</h1>
+            <h1 className={classes.homeTitle}>Интерактивная доска для командной работы, обсуждения идей и совместного рисования</h1>
             <p className={classes.description}>
-              Один проект объединяет React-клиент, backend API, PostgreSQL, роли пользователей
-              и совместное рисование в реальном времени.
+              Пространство, где участники команды могут вместе рисовать, обсуждать схемы, собирать идеи
+              и быстро переходить от мысли к общей визуальной карте.
             </p>
             <div className={classes.heroActions}>
               <Link to="/login" className={classes.primaryLink}>
@@ -116,20 +116,19 @@ function Home() {
                 Узнать о проекте
               </Link>
             </div>
-          </div>
-
-          <div className={classes.heroPanel}>
-            <div className={classes.heroStat}>
-              <span>Realtime</span>
-              <strong>Socket rooms</strong>
-            </div>
-            <div className={classes.heroStat}>
-              <span>Security</span>
-              <strong>JWT + RBAC</strong>
-            </div>
-            <div className={classes.heroStat}>
-              <span>Storage</span>
-              <strong>PostgreSQL</strong>
+            <div className={classes.heroPanel}>
+              <div className={classes.heroStat}>
+                <span>Совместная работа</span>
+                <strong>Общий холст для команды</strong>
+              </div>
+              <div className={classes.heroStat}>
+                <span>Живое взаимодействие</span>
+                <strong>Синхронизация изменений в реальном времени</strong>
+              </div>
+              <div className={classes.heroStat}>
+                <span>Гибкость сценариев</span>
+                <strong>Брейнштормы, схемы, заметки и прототипы</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -168,7 +167,7 @@ function Home() {
           </button>
         </div>
         <Link to="/about" className={classes.inlineLink}>
-          Архитектура и описание проекта
+          Подробнее о проекте
         </Link>
       </div>
 
