@@ -1,37 +1,66 @@
-import axios from 'axios';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
-const API_URL = 'http://localhost:5001/api';
+function getAuthToken() {
+  return localStorage.getItem('authToken');
+}
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
+async function request(path, options = {}) {
+  const token = getAuthToken();
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
 
-// Interceptor для добавления роли пользователя
-api.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  config.headers['X-User-Role'] = user.role || 'user';
-  config.headers['X-User-Id'] = user.id || 1;
-  return config;
-});
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
 
-export const boardsAPI = {
-  create: async (title) => {
-    const { data } = await api.post('/boards', { title });
-    return data;
-  },
-  getAll: async () => {
-    const { data } = await api.get('/boards');
-    return data;
-  },
-  update: async (id, title) => {
-    const { data } = await api.put(`/boards/${id}`, { title });
-    return data;
-  },
-  delete: async (id) => {
-    const { data } = await api.delete(`/boards/${id}`);
-    return data;
-  },
+  if (!response.ok) {
+    throw new Error(data?.message || 'Ошибка запроса');
+  }
+
+  return data;
+}
+
+export const authAPI = {
+  login: (payload) =>
+    request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  register: (payload) =>
+    request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  me: () => request('/auth/me'),
 };
 
-export default api;
+export const boardsAPI = {
+  getAll: () => request('/boards'),
+  getById: (id) => request(`/boards/${id}`),
+  create: (title) =>
+    request('/boards', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    }),
+  update: (id, title) =>
+    request(`/boards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ title }),
+    }),
+  remove: (id) =>
+    request(`/boards/${id}`, {
+      method: 'DELETE',
+    }),
+  share: (id, email) =>
+    request(`/boards/${id}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+};
+
+export { API_URL, getAuthToken };

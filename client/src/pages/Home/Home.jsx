@@ -1,77 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import BoardCard from '../../components/BoardCard/BoardCard';
+import { boardsAPI } from '../../api/boards';
 import classes from './Home.module.css';
 
 function Home() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [boards, setBoards] = useState([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const { user: reduxUser } = useSelector((state) => state.auth || {});
-  const API_URL = 'http://localhost:5001';
-
-  // Функция получения корректного ID пользователя
-  const getUserId = () => {
-    const user = reduxUser || JSON.parse(localStorage.getItem('user') || '{}');
-    let userId = user.id;
-    
-    // Если ID - timestamp (большое число), используем дефолтный
-    if (userId && parseInt(userId) > 1000000) {
-      console.warn('⚠️ ID похож на timestamp, используем ID=2');
-      return 2;
-    }
-    
-    return parseInt(userId) || 2;
-  };
-
-  // Функция получения роли пользователя
-  const getUserRole = () => {
-    const user = reduxUser || JSON.parse(localStorage.getItem('user') || '{}');
-    return user.role || 'user';
-  };
-
-  // Загрузка досок
-  const loadBoards = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const userId = getUserId();
-      const userRole = getUserRole();
-      
-      console.log('📡 Загрузка досок, user:', { userId, userRole });
-      
-      const res = await fetch(`${API_URL}/api/boards`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': userRole,
-          'X-User-Id': String(userId),
-        },
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(`Ошибка ${res.status}: ${errorData.message || 'Неизвестная ошибка'}`);
-      }
-      
-      const data = await res.json();
-      console.log('✅ Доски загружены:', data);
-      setBoards(data);
-    } catch (e) {
-      console.error('❌ Ошибка загрузки:', e);
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    loadBoards();
-  }, []);
+    if (!isAuthenticated) {
+      setBoards([]);
+      return;
+    }
 
-  // Создание доски
+    let cancelled = false;
+
+    const loadBoards = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await boardsAPI.getAll();
+        if (!cancelled) {
+          setBoards(data);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBoards();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
   const handleCreate = async () => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
@@ -80,142 +55,115 @@ function Home() {
     }
 
     setLoading(true);
-    setError(null);
-    
+    setError('');
     try {
-      const userId = getUserId();
-      const userRole = getUserRole();
-      
-      console.log('📡 Создание доски:', { 
-        title: trimmedTitle, 
-        userId, 
-        userRole 
-      });
-      
-      const res = await fetch(`${API_URL}/api/boards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': userRole,
-          'X-User-Id': String(userId),
-        },
-        body: JSON.stringify({ title: trimmedTitle }),
-      });
-
-      console.log('📦 Ответ сервера:', res.status);
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error('❌ Ошибка создания:', errorData);
-        throw new Error(errorData.message || 'Не удалось создать доску');
-      }
-
-      const newBoard = await res.json();
-      console.log('✅ Доска создана:', newBoard);
-      setBoards([newBoard, ...boards]);
+      const createdBoard = await boardsAPI.create(trimmedTitle);
+      setBoards((current) => [createdBoard, ...current]);
       setTitle('');
-    } catch (err) {
-      console.error('❌ Ошибка:', err);
-      setError(err.message);
+      navigate(`/board/${createdBoard.id}`);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Удаление доски
   const handleDelete = async (id) => {
-    if (!window.confirm('Удалить эту доску?')) return;
+    if (!window.confirm('Удалить эту доску?')) {
+      return;
+    }
 
     try {
-      const userId = getUserId();
-      const userRole = getUserRole();
-      
-      const res = await fetch(`${API_URL}/api/boards/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': userRole,
-          'X-User-Id': String(userId),
-        },
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Не удалось удалить');
-      }
-
-      setBoards(boards.filter(b => b.id !== id));
-    } catch (err) {
-      setError(err.message);
+      await boardsAPI.remove(id);
+      setBoards((current) => current.filter((board) => board.id !== id));
+    } catch (requestError) {
+      setError(requestError.message);
     }
   };
 
-  // Обновление доски
   const handleEdit = async (id, currentTitle) => {
-    const newTitle = window.prompt('Новое название:', currentTitle);
-    if (!newTitle || !newTitle.trim() || newTitle === currentTitle) return;
+    const updatedTitle = window.prompt('Новое название:', currentTitle);
+    if (!updatedTitle || updatedTitle.trim() === currentTitle) {
+      return;
+    }
 
     try {
-      const userId = getUserId();
-      const userRole = getUserRole();
-      
-      const res = await fetch(`${API_URL}/api/boards/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': userRole,
-          'X-User-Id': String(userId),
-        },
-        body: JSON.stringify({ title: newTitle.trim() }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Не удалось обновить');
-      }
-
-      const updated = await res.json();
-      setBoards(boards.map(b => b.id === id ? updated : b));
-    } catch (err) {
-      setError(err.message);
+      const updatedBoard = await boardsAPI.update(id, updatedTitle.trim());
+      setBoards((current) =>
+        current.map((board) => (board.id === id ? { ...board, ...updatedBoard } : board))
+      );
+    } catch (requestError) {
+      setError(requestError.message);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <section className={classes.hero}>
+        <div className={classes.heroContent}>
+          <p className={classes.kicker}>Совместная работа в реальном времени</p>
+          <h1 className={classes.homeTitle}>Интерактивная доска для командной работы и защиты курсового проекта</h1>
+          <p className={classes.description}>
+            Проект объединяет React-клиент, Node.js API, PostgreSQL, JWT-аутентификацию и
+            realtime-синхронизацию доски через сокеты.
+          </p>
+          <div className={classes.heroActions}>
+            <Link to="/login" className={classes.primaryLink}>
+              Войти и открыть доски
+            </Link>
+            <Link to="/about" className={classes.secondaryLink}>
+              Посмотреть описание проекта
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <div className={classes.home}>
-      <h1 className={classes.homeTitle}>Ваши доски</h1>
+    <section className={classes.home}>
+      <div className={classes.topline}>
+        <div>
+          <p className={classes.kicker}>Рабочее пространство</p>
+          <h1 className={classes.homeTitle}>Доски пользователя {user?.name}</h1>
+        </div>
+        <div className={classes.statusCard}>
+          <span className={classes.statusLabel}>Роль</span>
+          <strong>{user?.role === 'admin' ? 'Администратор' : 'Участник'}</strong>
+        </div>
+      </div>
 
       <div className={classes.form}>
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
+          onChange={(event) => setTitle(event.target.value)}
+          onKeyDown={(event) => event.key === 'Enter' && handleCreate()}
           placeholder="Название новой доски"
           className={classes.input}
           disabled={loading}
         />
-        <button 
-          onClick={handleCreate}
-          className={classes.button}
-          disabled={loading || !title.trim()}
-        >
-          {loading ? 'Создание...' : 'Создать доску'}
+        <button onClick={handleCreate} className={classes.button} disabled={loading || !title.trim()}>
+          {loading ? 'Сохранение...' : 'Создать доску'}
         </button>
       </div>
 
-      {loading && <p className={classes.info}>Загрузка...</p>}
       {error && <p className={classes.error}>Ошибка: {error}</p>}
-      
+      {loading && <p className={classes.info}>Загрузка данных...</p>}
+
       <div className={classes.grid}>
         {boards.length === 0 && !loading ? (
-          <p className={classes.empty}>Нет досок. Создайте первую!</p>
+          <div className={classes.emptyState}>
+            <p>Пока нет доступных досок. Создай первую или попроси владельца выдать доступ.</p>
+          </div>
         ) : (
-          boards.map(board => (
+          boards.map((board) => (
             <BoardCard
               key={board.id}
               id={board.id}
               title={board.title}
+              ownerName={board.owner_name}
+              isCollaborator={board.is_collaborator}
               lastModified={board.updated_at || board.created_at}
               onDelete={() => handleDelete(board.id)}
               onEdit={() => handleEdit(board.id, board.title)}
@@ -223,11 +171,7 @@ function Home() {
           ))
         )}
       </div>
-      
-      <div className={classes.actions}>
-        <Link to="/about" className={classes.link}>О проекте</Link>
-      </div>
-    </div>
+    </section>
   );
 }
 

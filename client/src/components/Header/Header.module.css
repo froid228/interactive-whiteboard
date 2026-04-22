@@ -1,78 +1,98 @@
 .header {
-  display: flex;
-  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
   align-items: center;
-  padding: 15px 30px;
-  background-color: #282c34;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 18px 28px;
+  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .logo {
-  text-decoration: none;
   color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #fbbf24;
 }
 
 .title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  margin: 4px 0 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.nav {
+  display: flex;
+  gap: 14px;
+}
+
+.navLink,
+.loginLink {
+  color: #e2e8f0;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navLink:hover,
+.loginLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .user {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .userName {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  font-weight: 600;
+}
+
+.userRole {
+  font-size: 0.8rem;
+  color: #cbd5e1;
 }
 
 .logoutBtn {
-  padding: 8px 16px;
-  background-color: #dc3545;
-  color: white;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  padding: 10px 16px;
 }
 
-.logoutBtn:hover {
-  background-color: #c82333;
-}
-
-.loginLink {
-  padding: 8px 16px;
-  background-color: #61dafb;
-  color: #282c34;
-  text-decoration: none;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.loginLink:hover {
-  background-color: #4fa8c7;
-}
-
-/* Адаптив для мобильных */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .header {
-    padding: 12px 20px;
+    grid-template-columns: 1fr;
+    padding: 16px 18px;
   }
-  
-  .title {
-    font-size: 1.2rem;
+
+  .nav,
+  .user {
+    justify-content: space-between;
   }
-  
-  .userName {
-    font-size: 0.8rem;
+
+  .userMeta {
+    align-items: flex-start;
   }
 }

@@ -1,50 +1,117 @@
 .board {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 60px);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 18px 36px;
 }
 
 .boardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
 }
 
-.boardHeader h2 {
-  margin: 0;
-  color: #282c34;
-}
-
-.boardHeader a {
-  color: #61dafb;
+.backLink {
+  color: #0f766e;
   text-decoration: none;
 }
 
-.canvasArea {
-  flex: 1;
-  background-color: #ffffff;
+.boardTitle {
+  margin: 8px 0 0;
+  font-size: 2rem;
+}
+
+.boardMeta {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.actions {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  gap: 10px;
 }
 
-.canvasArea p {
-  color: #ccc;
-  font-size: 1.1rem;
-}
-.chatLink {
-  padding: 8px 16px;
-  background-color: #61dafb;
-  color: #282c34;
+.clearButton,
+.chatLink,
+.shareButton {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #0f172a;
+  color: #fff;
   text-decoration: none;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: background-color 0.2s;
 }
 
-.chatLink:hover {
-  background-color: #4fa8c7;
+.error {
+  color: #b91c1c;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+}
+
+.sidebar {
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.members {
+  padding-left: 18px;
+  margin: 12px 0 0;
+}
+
+.members li + li {
+  margin-top: 8px;
+}
+
+.shareInput {
+  width: 100%;
+  margin-bottom: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.canvasWrap {
+  min-height: 70vh;
+  padding: 10px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 66vh;
+  display: block;
+  border-radius: 20px;
+  background:
+    linear-gradient(transparent 31px, rgba(148, 163, 184, 0.12) 32px),
+    linear-gradient(90deg, transparent 31px, rgba(148, 163, 184, 0.12) 32px),
+    #fff;
+  background-size: 32px 32px;
+  touch-action: none;
+}
+
+@media (max-width: 980px) {
+  .boardHeader,
+  .workspace {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
 }

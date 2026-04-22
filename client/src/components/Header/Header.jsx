@@ -17,18 +17,30 @@ function Header() {
   return (
     <header className={classes.header}>
       <Link to="/" className={classes.logo}>
-        <h1 className={classes.title}>Интерактивная доска</h1>
+        <span className={classes.eyebrow}>Realtime collaboration</span>
+        <h1 className={classes.title}>Interactive Whiteboard</h1>
       </Link>
-      
+
+      <nav className={classes.nav}>
+        <Link to="/about" className={classes.navLink}>
+          О проекте
+        </Link>
+        {isAuthenticated && (
+          <Link to="/settings" className={classes.navLink}>
+            Настройки
+          </Link>
+        )}
+      </nav>
+
       <div className={classes.user}>
         {isAuthenticated && user ? (
           <>
-            <span className={classes.userName}>
-              👤 {user.name}
-              {user.role === 'admin' && ' 👑'}
-            </span>
+            <div className={classes.userMeta}>
+              <span className={classes.userName}>{user.name}</span>
+              <span className={classes.userRole}>{user.role === 'admin' ? 'Администратор' : 'Участник'}</span>
+            </div>
             <button onClick={handleLogout} className={classes.logoutBtn}>
-              Выход
+              Выйти
             </button>
           </>
         ) : (

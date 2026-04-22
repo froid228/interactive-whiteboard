@@ -1,70 +1,160 @@
-# Getting Started with Create React App
+# Interactive Whiteboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Курсовой проект по теме «Интерактивная доска для совместной работы в реальном времени».
 
-## Available Scripts
+## Что реализовано
 
-In the project directory, you can run:
+- клиент-серверное приложение на React + Node.js + PostgreSQL
+- JWT-аутентификация и серверная проверка ролей
+- CRUD для досок
+- разграничение доступа: владелец, участник, администратор
+- совместное рисование в реальном времени через Socket.IO
+- тестовые данные и автоматическая инициализация схемы БД
+- Docker-конфигурация для запуска полного стенда
+- базовый fuzzing API
 
-### `npm start`
+## Стек
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Frontend: React, Redux, React Router
+- Backend: Node.js, Express, Socket.IO
+- Database: PostgreSQL
+- Auth: JWT, bcrypt
+- Infra: Docker, Docker Compose
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Структура проекта
 
-### `npm test`
+```text
+client/
+  public/
+  src/
+    api/
+    components/
+    pages/
+    redux/
+server/
+  scripts/
+  src/
+    config/
+    controllers/
+    middleware/
+    models/
+    routes/
+    socket.js
+docker-compose.yml
+README.md
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Тестовые пользователи
 
-### `npm run build`
+- `admin@whiteboard.local / Admin123!`
+- `alice@whiteboard.local / User123!`
+- `bob@whiteboard.local / User123!`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Пользователи создаются автоматически при старте backend, если таблица `users` пуста.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Локальный запуск
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 1. Backend
 
-### `npm run eject`
+```bash
+cd server
+npm install
+cp .env.example .env
+npm run dev
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Frontend
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+cd client
+npm install
+cp .env.example .env
+npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+По умолчанию:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- frontend: `http://localhost:3000`
+- backend: `http://localhost:5001`
 
-## Learn More
+## Запуск через Docker
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+docker compose up --build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Сервисы:
 
-### Code Splitting
+- `client` на `http://localhost:3000`
+- `server` на `http://localhost:5001`
+- `postgres` на `localhost:5432`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Переменные окружения
 
-### Analyzing the Bundle Size
+### `server/.env`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```env
+PORT=5001
+CLIENT_ORIGIN=http://localhost:3000
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=whiteboard
+DB_USER=whiteboard
+DB_PASSWORD=whiteboard
+JWT_SECRET=super-secret-key
+NODE_ENV=development
+```
 
-### Making a Progressive Web App
+### `client/.env`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```env
+REACT_APP_API_URL=http://localhost:5001/api
+REACT_APP_SOCKET_URL=http://localhost:5001
+```
 
-### Advanced Configuration
+## API
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Auth
 
-### Deployment
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Boards
 
-### `npm run build` fails to minify
+- `GET /api/boards`
+- `POST /api/boards`
+- `GET /api/boards/:id`
+- `PUT /api/boards/:id`
+- `DELETE /api/boards/:id`
+- `POST /api/boards/:id/share`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Проверка realtime
+
+1. Войти под `alice@whiteboard.local`.
+2. Открыть любую доску.
+3. Во втором окне войти под `bob@whiteboard.local`.
+4. После выдачи доступа на доску начать рисовать в одном окне.
+5. Линии должны появляться во втором окне почти сразу.
+
+## Фаззинг
+
+Базовый сценарий фаззинга:
+
+```bash
+cd server
+npm run fuzz
+```
+
+Скрипт проверяет:
+
+- пустые и некорректные данные при регистрации
+- неверный пароль при логине
+- обращение к API без токена
+- некорректные токены и JSON-поля
+
+## Что ещё можно развивать
+
+- чат доски с серверным хранением сообщений
+- инструменты рисования: цвета, толщины, фигуры
+- UML-диаграммы и отчёт по тестированию для защиты

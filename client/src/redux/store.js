@@ -1,19 +1,20 @@
-import { createStore, combineReducers, applyMiddleware } from 'redux';
-import { thunk } from 'redux-thunk'; // ← Добавьте middleware для async actions
+import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
+import { thunk } from 'redux-thunk';
 import toolbarReducer from './reducers/toolbarReducer';
 import agreementReducer from './reducers/agreementReducer';
-import authReducer from './reducers/authReducer'; // ← Новый редьюсер
+import authReducer from './reducers/authReducer';
 
 const rootReducer = combineReducers({
   toolbar: toolbarReducer,
   agreement: agreementReducer,
-  auth: authReducer, // ← Добавляем auth в store
+  auth: authReducer,
 });
+
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
 const store = createStore(
   rootReducer,
-  applyMiddleware(thunk), // ← Добавляем thunk middleware
-  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  composeEnhancers(applyMiddleware(thunk))
 );
 
 export default store;

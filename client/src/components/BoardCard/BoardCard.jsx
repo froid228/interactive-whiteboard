@@ -2,35 +2,32 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import classes from './BoardCard.module.css';
 
-// Оптимизация: React.memo предотвращает лишний ререндер
-const BoardCard = React.memo(({ id, title, lastModified, onDelete, onEdit }) => {
+const BoardCard = React.memo(({ id, title, ownerName, isCollaborator, lastModified, onDelete, onEdit }) => {
   return (
-    <div className={classes.card}>
+    <article className={classes.card}>
       <Link to={`/board/${id}`} className={classes.cardLink}>
-        <h3 className={classes.cardTitle}>{title}</h3>
-        {lastModified && (
-          <p className={classes.cardDate}>
-            Обновлено: {new Date(lastModified).toLocaleDateString()}
-          </p>
-        )}
+        <div className={classes.cardHeader}>
+          <span className={classes.badge}>{isCollaborator ? 'Совместная' : 'Моя доска'}</span>
+          <h3 className={classes.cardTitle}>{title}</h3>
+        </div>
+
+        <div className={classes.meta}>
+          <span>Владелец: {ownerName || 'неизвестно'}</span>
+          {lastModified && (
+            <span>Обновлено: {new Date(lastModified).toLocaleString('ru-RU')}</span>
+          )}
+        </div>
       </Link>
+
       <div className={classes.actions}>
-        <button
-          type="button"
-          className={classes.editBtn}
-          onClick={onEdit}
-        >
-          Редактировать
+        <button type="button" className={classes.editBtn} onClick={onEdit}>
+          Переименовать
         </button>
-        <button
-          type="button"
-          className={classes.deleteBtn}
-          onClick={onDelete}
-        >
+        <button type="button" className={classes.deleteBtn} onClick={onDelete}>
           Удалить
         </button>
       </div>
-    </div>
+    </article>
   );
 });
 
