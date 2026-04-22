@@ -1,40 +1,52 @@
 .hero,
 .home {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 36px 18px 48px;
+  padding: 36px 18px 54px;
 }
 
 .heroContent {
-  padding: 54px;
-  border-radius: 32px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 22px;
+  padding: 36px;
+  border-radius: 34px;
   background:
-    linear-gradient(120deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9)),
-    #0f172a;
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.2), transparent 24%),
+    linear-gradient(140deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.92));
   color: #f8fafc;
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
+}
+
+.heroText {
+  align-self: center;
 }
 
 .kicker {
   margin: 0 0 10px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: #fbbf24;
+  color: #7dd3fc;
   font-weight: 700;
 }
 
 .homeTitle {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  line-height: 1.05;
+  font-size: clamp(2.1rem, 5vw, 4rem);
+  line-height: 1;
 }
 
-.description {
-  max-width: 720px;
+.description,
+.subtitle {
+  max-width: 760px;
   margin: 18px 0 0;
-  color: rgba(248, 250, 252, 0.86);
+  color: rgba(248, 250, 252, 0.82);
   line-height: 1.7;
+}
+
+.subtitle {
+  color: #475569;
 }
 
 .heroActions {
@@ -44,7 +56,8 @@
 }
 
 .primaryLink,
-.secondaryLink {
+.secondaryLink,
+.inlineLink {
   text-decoration: none;
   border-radius: 999px;
   padding: 14px 18px;
@@ -61,50 +74,100 @@
   color: #f8fafc;
 }
 
+.heroPanel {
+  display: grid;
+  gap: 14px;
+  align-content: end;
+}
+
+.heroStat {
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heroStat span,
+.statusLabel,
+.statusNote {
+  display: block;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.82rem;
+}
+
+.heroStat strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.2rem;
+}
+
 .topline {
   display: flex;
   justify-content: space-between;
   gap: 18px;
   align-items: end;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .statusCard {
-  min-width: 180px;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.84);
+  min-width: 200px;
+  padding: 22px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
 .statusLabel {
-  display: block;
-  margin-bottom: 6px;
   color: #64748b;
-  font-size: 0.82rem;
+  margin-bottom: 6px;
+}
+
+.statusCard strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.statusNote {
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.commandBar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
 .form {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
-  margin-bottom: 18px;
+  flex: 1;
 }
 
 .input {
   border: 1px solid #cbd5e1;
   border-radius: 18px;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .button {
   border: none;
   border-radius: 18px;
   padding: 16px 20px;
-  background: #0f766e;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
   color: #fff;
   font-weight: 700;
+}
+
+.inlineLink {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+  white-space: nowrap;
 }
 
 .info,
@@ -125,19 +188,24 @@
 .emptyState {
   padding: 28px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, 0.78);
   border: 1px dashed #94a3b8;
 }
 
-@media (max-width: 720px) {
-  .heroContent {
-    padding: 30px 24px;
+.emptyState h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .heroContent,
+  .topline,
+  .commandBar {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 
-  .heroActions,
-  .topline {
+  .heroActions {
     flex-direction: column;
-    align-items: stretch;
   }
 
   .form {

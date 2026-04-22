@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
 import { boardsAPI, getAuthToken } from '../../api/boards';
+import Toolbar from '../../components/Toolbar/Toolbar';
 import classes from './Board.module.css';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
-const DEFAULT_COLOR = '#0f172a';
 const DEFAULT_WIDTH = 4;
+const ERASER_WIDTH = 18;
 
 function drawSnapshot(context, snapshot) {
   if (!context || !context.canvas) {
@@ -21,8 +23,8 @@ function drawSnapshot(context, snapshot) {
     }
 
     context.beginPath();
-    context.strokeStyle = segment.color || DEFAULT_COLOR;
-    context.lineWidth = segment.width || DEFAULT_WIDTH;
+    context.strokeStyle = segment.color;
+    context.lineWidth = segment.width;
     context.lineJoin = 'round';
     context.lineCap = 'round';
     context.moveTo(segment.points[0].x, segment.points[0].y);
@@ -45,6 +47,7 @@ function getCoordinates(event, canvas) {
 
 function Board() {
   const { id } = useParams();
+  const { currentTool, color } = useSelector((state) => state.toolbar);
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
   const snapshotRef = useRef([]);
@@ -164,12 +167,18 @@ function Board() {
       return;
     }
 
+    if (currentTool === 'text' || currentTool === 'shape') {
+      setError(`Инструмент "${currentTool}" пока отображается в панели как будущая возможность.`);
+      return;
+    }
+
     const point = getCoordinates(event, canvas);
     currentSegmentRef.current = {
-      color: DEFAULT_COLOR,
-      width: DEFAULT_WIDTH,
+      color: currentTool === 'eraser' ? '#ffffff' : color,
+      width: currentTool === 'eraser' ? ERASER_WIDTH : DEFAULT_WIDTH,
       points: [point],
     };
+    setError('');
     setDrawing(true);
   };
 
@@ -256,6 +265,8 @@ function Board() {
 
       <div className={classes.workspace}>
         <aside className={classes.sidebar}>
+          <Toolbar onClear={handleClearBoard} />
+
           <div className={classes.panel}>
             <h3>Команда доски</h3>
             <ul className={classes.members}>
@@ -284,6 +295,10 @@ function Board() {
         </aside>
 
         <div className={classes.canvasWrap}>
+          <div className={classes.canvasMeta}>
+            <span>Инструмент: {currentTool}</span>
+            <span>Цвет: {currentTool === 'eraser' ? 'ластик' : color}</span>
+          </div>
           <canvas
             ref={canvasRef}
             className={classes.canvas}

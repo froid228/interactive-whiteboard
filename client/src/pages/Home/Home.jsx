@@ -101,19 +101,36 @@ function Home() {
     return (
       <section className={classes.hero}>
         <div className={classes.heroContent}>
-          <p className={classes.kicker}>Совместная работа в реальном времени</p>
-          <h1 className={classes.homeTitle}>Интерактивная доска для командной работы и защиты курсового проекта</h1>
-          <p className={classes.description}>
-            Проект объединяет React-клиент, Node.js API, PostgreSQL, JWT-аутентификацию и
-            realtime-синхронизацию доски через сокеты.
-          </p>
-          <div className={classes.heroActions}>
-            <Link to="/login" className={classes.primaryLink}>
-              Войти и открыть доски
-            </Link>
-            <Link to="/about" className={classes.secondaryLink}>
-              Посмотреть описание проекта
-            </Link>
+          <div className={classes.heroText}>
+            <p className={classes.kicker}>Realtime collaboration studio</p>
+            <h1 className={classes.homeTitle}>Интерактивная доска для командной работы, прототипирования и защиты курсового проекта</h1>
+            <p className={classes.description}>
+              Один проект объединяет React-клиент, backend API, PostgreSQL, роли пользователей
+              и совместное рисование в реальном времени.
+            </p>
+            <div className={classes.heroActions}>
+              <Link to="/login" className={classes.primaryLink}>
+                Открыть рабочее пространство
+              </Link>
+              <Link to="/about" className={classes.secondaryLink}>
+                Узнать о проекте
+              </Link>
+            </div>
+          </div>
+
+          <div className={classes.heroPanel}>
+            <div className={classes.heroStat}>
+              <span>Realtime</span>
+              <strong>Socket rooms</strong>
+            </div>
+            <div className={classes.heroStat}>
+              <span>Security</span>
+              <strong>JWT + RBAC</strong>
+            </div>
+            <div className={classes.heroStat}>
+              <span>Storage</span>
+              <strong>PostgreSQL</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -126,26 +143,33 @@ function Home() {
         <div>
           <p className={classes.kicker}>Рабочее пространство</p>
           <h1 className={classes.homeTitle}>Доски пользователя {user?.name}</h1>
+          <p className={classes.subtitle}>Создавай новые доски, открывай совместный доступ и переходи прямо в живой режим рисования.</p>
         </div>
         <div className={classes.statusCard}>
           <span className={classes.statusLabel}>Роль</span>
           <strong>{user?.role === 'admin' ? 'Администратор' : 'Участник'}</strong>
+          <span className={classes.statusNote}>{boards.length} доступных досок</span>
         </div>
       </div>
 
-      <div className={classes.form}>
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && handleCreate()}
-          placeholder="Название новой доски"
-          className={classes.input}
-          disabled={loading}
-        />
-        <button onClick={handleCreate} className={classes.button} disabled={loading || !title.trim()}>
-          {loading ? 'Сохранение...' : 'Создать доску'}
-        </button>
+      <div className={classes.commandBar}>
+        <div className={classes.form}>
+          <input
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && handleCreate()}
+            placeholder="Название новой доски"
+            className={classes.input}
+            disabled={loading}
+          />
+          <button onClick={handleCreate} className={classes.button} disabled={loading || !title.trim()}>
+            {loading ? 'Сохранение...' : 'Создать доску'}
+          </button>
+        </div>
+        <Link to="/about" className={classes.inlineLink}>
+          Архитектура и описание проекта
+        </Link>
       </div>
 
       {error && <p className={classes.error}>Ошибка: {error}</p>}
@@ -154,7 +178,8 @@ function Home() {
       <div className={classes.grid}>
         {boards.length === 0 && !loading ? (
           <div className={classes.emptyState}>
-            <p>Пока нет доступных досок. Создай первую или попроси владельца выдать доступ.</p>
+            <h3>Пока нет доступных досок</h3>
+            <p>Создай первую доску или попроси владельца выдать тебе доступ к уже существующей.</p>
           </div>
         ) : (
           boards.map((board) => (
