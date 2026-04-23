@@ -12,6 +12,15 @@ function Home() {
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notifications, setNotifications] = useState([]);
+
+  const pushNotification = (message, tone = 'info') => {
+    const id = Date.now() + Math.random();
+    setNotifications((current) => [...current, { id, message, tone }]);
+    window.setTimeout(() => {
+      setNotifications((current) => current.filter((item) => item.id !== id));
+    }, 3200);
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -60,6 +69,7 @@ function Home() {
       const createdBoard = await boardsAPI.create(trimmedTitle);
       setBoards((current) => [createdBoard, ...current]);
       setTitle('');
+      pushNotification(`Доска "${createdBoard.title}" создана`, 'success');
       navigate(`/board/${createdBoard.id}`);
     } catch (requestError) {
       setError(requestError.message);
@@ -69,13 +79,14 @@ function Home() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Удалить эту доску?')) {
-      return;
-    }
-
     try {
+      const deletedBoard = boards.find((board) => board.id === id);
       await boardsAPI.remove(id);
       setBoards((current) => current.filter((board) => board.id !== id));
+      pushNotification(
+        `Доска "${deletedBoard?.title || 'Без названия'}" удалена`,
+        'danger'
+      );
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -138,6 +149,25 @@ function Home() {
 
   return (
     <section className={classes.home}>
+      {notifications.length > 0 && (
+        <div className={classes.notifications} aria-live="polite">
+          {notifications.map((item) => (
+            <div
+              key={item.id}
+              className={`${classes.notification} ${
+                item.tone === 'success'
+                  ? classes.notificationSuccess
+                  : item.tone === 'danger'
+                    ? classes.notificationDanger
+                    : classes.notificationInfo
+              }`}
+            >
+              {item.message}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className={classes.topline}>
         <div>
           <p className={classes.kicker}>Рабочее пространство</p>

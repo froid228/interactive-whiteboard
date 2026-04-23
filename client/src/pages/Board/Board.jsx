@@ -9,6 +9,7 @@ import classes from './Board.module.css';
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
 const DEFAULT_WIDTH = 4;
 const ERASER_WIDTH = 18;
+const TEXT_SIZE = 26;
 
 function drawSnapshot(context, snapshot) {
   if (!context || !context.canvas) {
@@ -18,6 +19,38 @@ function drawSnapshot(context, snapshot) {
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 
   snapshot.forEach((segment) => {
+    if (!segment) {
+      return;
+    }
+
+    if (segment.type === 'text') {
+      context.fillStyle = segment.color || '#261d28';
+      context.font = `${segment.fontSize || TEXT_SIZE}px Georgia, "Times New Roman", serif`;
+      context.textBaseline = 'top';
+      context.fillText(segment.text || '', segment.x || 0, segment.y || 0);
+      return;
+    }
+
+    if (segment.type === 'shape') {
+      const start = segment.start || { x: 0, y: 0 };
+      const end = segment.end || start;
+      const x = Math.min(start.x, end.x);
+      const y = Math.min(start.y, end.y);
+      const width = Math.abs(end.x - start.x);
+      const height = Math.abs(end.y - start.y);
+
+      if (width < 2 || height < 2) {
+        return;
+      }
+
+      context.beginPath();
+      context.strokeStyle = segment.color || '#261d28';
+      context.lineWidth = segment.width || DEFAULT_WIDTH;
+      context.roundRect(x, y, width, height, 18);
+      context.stroke();
+      return;
+    }
+
     if (!segment?.points?.length) {
       return;
     }
@@ -167,13 +200,46 @@ function Board() {
       return;
     }
 
-    if (currentTool === 'text' || currentTool === 'shape') {
-      setError(`Инструмент "${currentTool}" пока отображается в панели как будущая возможность.`);
+    const point = getCoordinates(event, canvas);
+
+    if (currentTool === 'text') {
+      const text = window.prompt('Введите текст для размещения на доске:');
+
+      if (!text || !text.trim()) {
+        return;
+      }
+
+      const textSegment = {
+        type: 'text',
+        text: text.trim(),
+        x: point.x,
+        y: point.y,
+        color,
+        fontSize: TEXT_SIZE,
+      };
+
+      const nextSnapshot = [...snapshotRef.current, textSegment];
+      drawSnapshot(canvasRef.current?.getContext('2d'), nextSnapshot);
+      syncSnapshot(nextSnapshot);
+      setError('');
       return;
     }
 
-    const point = getCoordinates(event, canvas);
+    if (currentTool === 'shape') {
+      currentSegmentRef.current = {
+        type: 'shape',
+        color,
+        width: DEFAULT_WIDTH,
+        start: point,
+        end: point,
+      };
+      setError('');
+      setDrawing(true);
+      return;
+    }
+
     currentSegmentRef.current = {
+      type: 'line',
       color: currentTool === 'eraser' ? '#ffffff' : color,
       width: currentTool === 'eraser' ? ERASER_WIDTH : DEFAULT_WIDTH,
       points: [point],
@@ -189,6 +255,17 @@ function Board() {
 
     const canvas = canvasRef.current;
     const point = getCoordinates(event, canvas);
+
+    if (currentSegmentRef.current.type === 'shape') {
+      currentSegmentRef.current = {
+        ...currentSegmentRef.current,
+        end: point,
+      };
+
+      drawSnapshot(canvas.getContext('2d'), [...snapshotRef.current, currentSegmentRef.current]);
+      return;
+    }
+
     currentSegmentRef.current = {
       ...currentSegmentRef.current,
       points: [...currentSegmentRef.current.points, point],

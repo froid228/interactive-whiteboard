@@ -4,12 +4,13 @@
   padding: 18px;
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.84)),
-    #0f172a;
+    linear-gradient(180deg, rgba(47, 36, 51, 0.94), rgba(61, 43, 59, 0.9)),
+    #2f2433;
   color: #f8fafc;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18);
   position: sticky;
   top: 18px;
+  animation: toolbarEnter 0.72s ease both;
 }
 
 .group {
@@ -21,7 +22,7 @@
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: #93c5fd;
+  color: #f0d7c7;
   font-weight: 700;
 }
 
@@ -45,12 +46,19 @@
 
 .tool:hover {
   transform: translateY(-1px);
-  background: rgba(96, 165, 250, 0.12);
+  background: rgba(200, 109, 76, 0.12);
+}
+
+.tool:focus-visible,
+.clear:focus-visible,
+.colorPicker:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(200, 109, 76, 0.18);
 }
 
 .active {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.38), rgba(8, 145, 178, 0.32));
-  border-color: rgba(125, 211, 252, 0.42);
+  background: linear-gradient(135deg, rgba(200, 109, 76, 0.34), rgba(142, 79, 103, 0.34));
+  border-color: rgba(240, 178, 143, 0.42);
 }
 
 .toolIcon {
@@ -77,6 +85,12 @@
   align-items: center;
   gap: 14px;
   padding: 10px 14px;
+  transition: border-color 0.22s ease, background-color 0.22s ease;
+}
+
+.colorBlock:hover {
+  border-color: rgba(240, 178, 143, 0.3);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .colorPreview {
@@ -108,7 +122,7 @@
   border: none;
   border-radius: 18px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #f97316, #ef4444);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #fff;
   font-weight: 700;
   transition: transform 0.22s ease, box-shadow 0.22s ease;
@@ -116,5 +130,16 @@
 
 .clear:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 30px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 18px 30px rgba(171, 79, 59, 0.24);
+}
+
+@keyframes toolbarEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

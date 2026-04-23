@@ -10,8 +10,8 @@ function Toolbar({ onClear }) {
   const tools = [
     { id: 'pencil', icon: '✏️', label: 'Карандаш', hint: 'Рисование тонкой линией' },
     { id: 'eraser', icon: '🧽', label: 'Ластик', hint: 'Стирание фрагментов' },
-    { id: 'text', icon: 'T', label: 'Текст', hint: 'Подготовлено для следующего этапа' },
-    { id: 'shape', icon: '▢', label: 'Фигура', hint: 'Подготовлено для следующего этапа' },
+    { id: 'text', icon: 'T', label: 'Текст', hint: 'Добавление текста по клику на холст' },
+    { id: 'shape', icon: '▢', label: 'Фигура', hint: 'Нарисовать прямоугольную фигуру' },
   ];
 
   const handleClear = () => {

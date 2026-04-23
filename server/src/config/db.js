@@ -45,6 +45,52 @@ async function ensureSchema() {
   `);
 
   await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS name VARCHAR(120),
+    ADD COLUMN IF NOT EXISTS email VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS password_hash TEXT,
+    ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user',
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET name = COALESCE(NULLIF(TRIM(name), ''), SPLIT_PART(email, '@', 1), 'Пользователь')
+    WHERE name IS NULL OR TRIM(name) = '';
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET role = 'user'
+    WHERE role IS NULL OR role NOT IN ('admin', 'user');
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET created_at = NOW()
+    WHERE created_at IS NULL;
+  `);
+
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'password'
+      ) THEN
+        EXECUTE 'UPDATE users
+                 SET password = COALESCE(password, password_hash, '''')
+                 WHERE password IS NULL';
+
+        EXECUTE 'ALTER TABLE users
+                 ALTER COLUMN password SET DEFAULT ''''';
+      END IF;
+    END
+    $$;
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS boards (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -56,6 +102,32 @@ async function ensureSchema() {
   `);
 
   await pool.query(`
+    ALTER TABLE boards
+    ADD COLUMN IF NOT EXISTS owner_id INTEGER,
+    ADD COLUMN IF NOT EXISTS snapshot JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+  `);
+
+  await pool.query(`
+    UPDATE boards
+    SET snapshot = '[]'::jsonb
+    WHERE snapshot IS NULL;
+  `);
+
+  await pool.query(`
+    UPDATE boards
+    SET created_at = NOW()
+    WHERE created_at IS NULL;
+  `);
+
+  await pool.query(`
+    UPDATE boards
+    SET updated_at = COALESCE(updated_at, created_at, NOW())
+    WHERE updated_at IS NULL;
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS board_members (
       board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -64,21 +136,64 @@ async function ensureSchema() {
   `);
 
   await seedDefaults();
+
+  await pool.query(`
+    ALTER TABLE users
+    ALTER COLUMN name SET NOT NULL,
+    ALTER COLUMN email SET NOT NULL,
+    ALTER COLUMN password_hash SET NOT NULL,
+    ALTER COLUMN role SET NOT NULL,
+    ALTER COLUMN created_at SET NOT NULL;
+  `);
+
+  await pool.query(`
+    ALTER TABLE boards
+    ALTER COLUMN title SET NOT NULL,
+    ALTER COLUMN owner_id SET NOT NULL,
+    ALTER COLUMN snapshot SET NOT NULL,
+    ALTER COLUMN created_at SET NOT NULL,
+    ALTER COLUMN updated_at SET NOT NULL;
+  `);
 }
 
 async function seedDefaults() {
+  const defaultPasswordHashes = new Map();
+
   for (const user of DEFAULT_USERS) {
+    const passwordHash = await bcrypt.hash(user.password, 10);
+    defaultPasswordHashes.set(user.email, passwordHash);
+
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [user.email]);
     if (existing.rowCount > 0) {
+      await pool.query(
+        `
+          UPDATE users
+          SET name = COALESCE(NULLIF(TRIM(name), ''), $2),
+              password_hash = COALESCE(password_hash, $3),
+              role = COALESCE(role, $4)
+          WHERE email = $1
+        `,
+        [user.email, user.name, passwordHash, user.role]
+      );
       continue;
     }
 
-    const passwordHash = await bcrypt.hash(user.password, 10);
     await pool.query(
       `INSERT INTO users (name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)`,
       [user.name, user.email, passwordHash, user.role]
     );
+  }
+
+  const fallbackHash = await bcrypt.hash('ChangeMe123!', 10);
+
+  const usersWithoutPassword = await pool.query(
+    `SELECT id, email FROM users WHERE password_hash IS NULL OR TRIM(password_hash) = ''`
+  );
+
+  for (const user of usersWithoutPassword.rows) {
+    const resolvedHash = defaultPasswordHashes.get(user.email) || fallbackHash;
+    await pool.query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [user.id, resolvedHash]);
   }
 
   const boardCheck = await pool.query('SELECT id FROM boards LIMIT 1');

@@ -1,6 +1,19 @@
 :root {
   color-scheme: light;
   font-family: 'Segoe UI', sans-serif;
+  --bg: #f6efe7;
+  --bg-soft: #efe2d7;
+  --surface: rgba(255, 249, 243, 0.86);
+  --surface-strong: rgba(255, 250, 246, 0.94);
+  --surface-dark: #2f2433;
+  --surface-dark-2: #433041;
+  --text: #261d28;
+  --text-soft: #6d5a63;
+  --line: rgba(100, 78, 86, 0.18);
+  --accent: #c86d4c;
+  --accent-strong: #ab4f3b;
+  --accent-2: #8e4f67;
+  --gold: #d6a15d;
 }
 
 * {
@@ -9,8 +22,8 @@
 
 body {
   margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--bg);
+  color: var(--text);
 }
 
 a,
