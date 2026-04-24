@@ -219,6 +219,10 @@
 }
 
 @media (max-width: 760px) {
+  .about {
+    padding: 28px 14px 42px;
+  }
+
   .hero {
     padding: 28px 22px;
   }
@@ -237,5 +241,27 @@
 
   .actions {
     flex-direction: column;
+  }
+
+  .primaryLink,
+  .secondaryLink {
+    text-align: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero {
+    padding: 24px 18px;
+    border-radius: 28px;
+  }
+
+  .card,
+  .cardWide {
+    padding: 20px 18px;
+    border-radius: 22px;
+  }
+
+  .title {
+    line-height: 0.96;
   }
 }

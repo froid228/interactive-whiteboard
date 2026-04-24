@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
@@ -7,9 +7,10 @@ import Toolbar from '../../components/Toolbar/Toolbar';
 import classes from './Board.module.css';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
-const DEFAULT_WIDTH = 4;
 const ERASER_WIDTH = 18;
 const TEXT_SIZE = 26;
+const TEXT_INPUT_WIDTH = 220;
+const SHAPE_TOOLS = ['rectangle', 'circle', 'line', 'arrow'];
 
 function drawSnapshot(context, snapshot) {
   if (!context || !context.canvas) {
@@ -43,9 +44,51 @@ function drawSnapshot(context, snapshot) {
         return;
       }
 
-      context.beginPath();
       context.strokeStyle = segment.color || '#261d28';
-      context.lineWidth = segment.width || DEFAULT_WIDTH;
+      context.lineWidth = segment.width || 4;
+
+      if (segment.shape === 'circle') {
+        context.beginPath();
+        context.ellipse(
+          x + width / 2,
+          y + height / 2,
+          width / 2,
+          height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        context.stroke();
+        return;
+      }
+
+      if (segment.shape === 'line' || segment.shape === 'arrow') {
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.stroke();
+
+        if (segment.shape === 'arrow') {
+          const angle = Math.atan2(end.y - start.y, end.x - start.x);
+          const headLength = 14 + (segment.width || 4);
+
+          context.beginPath();
+          context.moveTo(end.x, end.y);
+          context.lineTo(
+            end.x - headLength * Math.cos(angle - Math.PI / 6),
+            end.y - headLength * Math.sin(angle - Math.PI / 6)
+          );
+          context.moveTo(end.x, end.y);
+          context.lineTo(
+            end.x - headLength * Math.cos(angle + Math.PI / 6),
+            end.y - headLength * Math.sin(angle + Math.PI / 6)
+          );
+          context.stroke();
+        }
+        return;
+      }
+
+      context.beginPath();
       context.roundRect(x, y, width, height, 18);
       context.stroke();
       return;
@@ -78,19 +121,114 @@ function getCoordinates(event, canvas) {
   };
 }
 
+function cloneSnapshot(snapshot) {
+  return JSON.parse(JSON.stringify(Array.isArray(snapshot) ? snapshot : []));
+}
+
+function getToolLabel(tool) {
+  const labels = {
+    pencil: 'карандаш',
+    eraser: 'ластик',
+    text: 'текст',
+    rectangle: 'прямоугольник',
+    circle: 'круг',
+    line: 'линия',
+    arrow: 'стрелка',
+  };
+
+  return labels[tool] || tool;
+}
+
 function Board() {
   const { id } = useParams();
-  const { currentTool, color } = useSelector((state) => state.toolbar);
+  const { currentTool, color, brushSize } = useSelector((state) => state.toolbar);
   const canvasRef = useRef(null);
+  const textInputRef = useRef(null);
   const socketRef = useRef(null);
   const snapshotRef = useRef([]);
   const currentSegmentRef = useRef(null);
   const remoteSegmentRef = useRef(null);
+  const historyRef = useRef([]);
+  const historyIndexRef = useRef(-1);
   const [board, setBoard] = useState(null);
   const [shareEmail, setShareEmail] = useState('');
   const [status, setStatus] = useState('Загрузка доски...');
   const [error, setError] = useState('');
   const [drawing, setDrawing] = useState(false);
+  const [textDraft, setTextDraft] = useState(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const syncHistoryControls = useCallback(() => {
+    setCanUndo(historyIndexRef.current > 0);
+    setCanRedo(historyIndexRef.current >= 0 && historyIndexRef.current < historyRef.current.length - 1);
+  }, []);
+
+  const seedHistory = useCallback((snapshot) => {
+    historyRef.current = [cloneSnapshot(snapshot)];
+    historyIndexRef.current = 0;
+    syncHistoryControls();
+  }, [syncHistoryControls]);
+
+  const recordSnapshot = (snapshot) => {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    historyRef.current = [
+      ...historyRef.current.slice(0, historyIndexRef.current + 1),
+      nextSnapshot,
+    ];
+    historyIndexRef.current = historyRef.current.length - 1;
+    syncHistoryControls();
+  };
+
+  const drawCurrentSnapshot = (snapshot) => {
+    snapshotRef.current = cloneSnapshot(snapshot);
+    remoteSegmentRef.current = null;
+    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+  };
+
+  const applySnapshot = (nextSnapshot, { sync = true, record = true } = {}) => {
+    drawCurrentSnapshot(nextSnapshot);
+
+    if (record) {
+      recordSnapshot(snapshotRef.current);
+    }
+
+    if (sync) {
+      socketRef.current?.emit('board-snapshot', {
+        boardId: id,
+        snapshot: snapshotRef.current,
+      });
+    }
+  };
+
+  const commitTextDraft = () => {
+    if (!textDraft) {
+      return;
+    }
+
+    const text = textDraft.value.trim();
+    setTextDraft(null);
+
+    if (!text) {
+      return;
+    }
+
+    const textSegment = {
+      type: 'text',
+      text,
+      x: textDraft.x,
+      y: textDraft.y,
+      color,
+      fontSize: TEXT_SIZE,
+    };
+
+    applySnapshot([...snapshotRef.current, textSegment]);
+    setError('');
+  };
+
+  const cancelTextDraft = () => {
+    setTextDraft(null);
+  };
 
   useEffect(() => {
     const loadBoard = async () => {
@@ -98,7 +236,8 @@ function Board() {
       try {
         const boardData = await boardsAPI.getById(id);
         setBoard(boardData);
-        snapshotRef.current = Array.isArray(boardData.snapshot) ? boardData.snapshot : [];
+        drawCurrentSnapshot(boardData.snapshot);
+        seedHistory(boardData.snapshot);
         setStatus('Подключение к комнате доски...');
       } catch (requestError) {
         setError(requestError.message);
@@ -106,7 +245,15 @@ function Board() {
     };
 
     loadBoard();
-  }, [id]);
+  }, [id, seedHistory]);
+
+  useEffect(() => {
+    if (!textDraft || !textInputRef.current) {
+      return;
+    }
+
+    textInputRef.current.focus();
+  }, [textDraft]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -149,8 +296,8 @@ function Board() {
           return;
         }
 
-        snapshotRef.current = Array.isArray(response.snapshot) ? response.snapshot : [];
-        drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+        drawCurrentSnapshot(response.snapshot);
+        seedHistory(response.snapshot);
         setStatus('Синхронизация активна');
       });
     });
@@ -165,15 +312,13 @@ function Board() {
     });
 
     socket.on('board-snapshot', ({ snapshot }) => {
-      snapshotRef.current = Array.isArray(snapshot) ? snapshot : [];
-      remoteSegmentRef.current = null;
-      drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+      drawCurrentSnapshot(snapshot);
+      seedHistory(snapshot);
     });
 
     socket.on('clear-board', () => {
-      snapshotRef.current = [];
-      remoteSegmentRef.current = null;
-      drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+      drawCurrentSnapshot([]);
+      seedHistory([]);
     });
 
     socket.on('connect_error', () => {
@@ -183,16 +328,7 @@ function Board() {
     return () => {
       socket.disconnect();
     };
-  }, [board, id]);
-
-  const syncSnapshot = (nextSnapshot) => {
-    snapshotRef.current = nextSnapshot;
-    remoteSegmentRef.current = null;
-    socketRef.current?.emit('board-snapshot', {
-      boardId: id,
-      snapshot: nextSnapshot,
-    });
-  };
+  }, [board, id, seedHistory]);
 
   const handlePointerDown = (event) => {
     const canvas = canvasRef.current;
@@ -203,33 +339,21 @@ function Board() {
     const point = getCoordinates(event, canvas);
 
     if (currentTool === 'text') {
-      const text = window.prompt('Введите текст для размещения на доске:');
-
-      if (!text || !text.trim()) {
-        return;
-      }
-
-      const textSegment = {
-        type: 'text',
-        text: text.trim(),
+      setTextDraft({
         x: point.x,
         y: point.y,
-        color,
-        fontSize: TEXT_SIZE,
-      };
-
-      const nextSnapshot = [...snapshotRef.current, textSegment];
-      drawSnapshot(canvasRef.current?.getContext('2d'), nextSnapshot);
-      syncSnapshot(nextSnapshot);
+        value: '',
+      });
       setError('');
       return;
     }
 
-    if (currentTool === 'shape') {
+    if (SHAPE_TOOLS.includes(currentTool)) {
       currentSegmentRef.current = {
         type: 'shape',
+        shape: currentTool,
         color,
-        width: DEFAULT_WIDTH,
+        width: brushSize,
         start: point,
         end: point,
       };
@@ -241,7 +365,7 @@ function Board() {
     currentSegmentRef.current = {
       type: 'line',
       color: currentTool === 'eraser' ? '#ffffff' : color,
-      width: currentTool === 'eraser' ? ERASER_WIDTH : DEFAULT_WIDTH,
+      width: currentTool === 'eraser' ? ERASER_WIDTH : brushSize,
       points: [point],
     };
     setError('');
@@ -285,17 +409,35 @@ function Board() {
     }
 
     const nextSnapshot = [...snapshotRef.current, currentSegmentRef.current];
-    drawSnapshot(canvasRef.current?.getContext('2d'), nextSnapshot);
-    syncSnapshot(nextSnapshot);
+    applySnapshot(nextSnapshot);
     currentSegmentRef.current = null;
     setDrawing(false);
   };
 
   const handleClearBoard = () => {
-    snapshotRef.current = [];
-    remoteSegmentRef.current = null;
-    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+    setTextDraft(null);
+    applySnapshot([]);
     socketRef.current?.emit('clear-board', { boardId: id });
+  };
+
+  const handleUndo = () => {
+    if (historyIndexRef.current <= 0) {
+      return;
+    }
+
+    historyIndexRef.current -= 1;
+    syncHistoryControls();
+    applySnapshot(historyRef.current[historyIndexRef.current], { sync: true, record: false });
+  };
+
+  const handleRedo = () => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) {
+      return;
+    }
+
+    historyIndexRef.current += 1;
+    syncHistoryControls();
+    applySnapshot(historyRef.current[historyIndexRef.current], { sync: true, record: false });
   };
 
   const handleShare = async (event) => {
@@ -329,6 +471,12 @@ function Board() {
           </p>
         </div>
         <div className={classes.actions}>
+          <button type="button" onClick={handleUndo} className={classes.secondaryAction} disabled={!canUndo}>
+            Назад
+          </button>
+          <button type="button" onClick={handleRedo} className={classes.secondaryAction} disabled={!canRedo}>
+            Вперёд
+          </button>
           <button type="button" onClick={handleClearBoard} className={classes.clearButton}>
             Очистить холст
           </button>
@@ -373,17 +521,47 @@ function Board() {
 
         <div className={classes.canvasWrap}>
           <div className={classes.canvasMeta}>
-            <span>Инструмент: {currentTool}</span>
+            <span>Инструмент: {getToolLabel(currentTool)}</span>
             <span>Цвет: {currentTool === 'eraser' ? 'ластик' : color}</span>
+            <span>Толщина: {currentTool === 'eraser' ? `${ERASER_WIDTH}px` : `${brushSize}px`}</span>
           </div>
-          <canvas
-            ref={canvasRef}
-            className={classes.canvas}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={finishStroke}
-            onPointerLeave={finishStroke}
-          />
+          <div className={classes.canvasStage}>
+            <canvas
+              ref={canvasRef}
+              className={classes.canvas}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishStroke}
+              onPointerLeave={finishStroke}
+            />
+            {textDraft && (
+              <textarea
+                ref={textInputRef}
+                value={textDraft.value}
+                onChange={(event) =>
+                  setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
+                }
+                onBlur={commitTextDraft}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelTextDraft();
+                  }
+
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    commitTextDraft();
+                  }
+                }}
+                placeholder="Введите текст..."
+                className={classes.textEditor}
+                style={{
+                  left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
+                  top: textDraft.y,
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </section>

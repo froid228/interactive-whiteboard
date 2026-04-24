@@ -203,6 +203,37 @@
   color: #4b3640;
 }
 
+@media (max-width: 640px) {
+  .card {
+    padding: 18px;
+  }
+
+  .preview {
+    min-height: 100px;
+  }
+
+  .previewLineLong {
+    width: 104px;
+  }
+
+  .previewShape {
+    right: 18px;
+    top: 18px;
+    width: 46px;
+    height: 46px;
+  }
+
+  .cardFooter,
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .arrow {
+    align-self: flex-start;
+  }
+}
+
 @keyframes cardAppear {
   from {
     opacity: 0;

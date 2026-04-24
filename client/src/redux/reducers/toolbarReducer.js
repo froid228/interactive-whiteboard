@@ -1,4 +1,4 @@
-import { SET_TOOL, SET_COLOR, CLEAR_CANVAS } from '../actions/toolbarActions';
+import { SET_TOOL, SET_COLOR, SET_BRUSH_SIZE, CLEAR_CANVAS } from '../actions/toolbarActions';
 
 // Начальное состояние
 const initialState = {
@@ -15,6 +15,9 @@ const toolbarReducer = (state = initialState, action) => {
     
     case SET_COLOR:
       return { ...state, color: action.payload };
+
+    case SET_BRUSH_SIZE:
+      return { ...state, brushSize: action.payload };
     
     case CLEAR_CANVAS:
       // Здесь можно добавить логику очистки canvas

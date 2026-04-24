@@ -1,17 +1,20 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCanvas, setColor, setTool } from '../../redux/actions/toolbarActions';
+import { clearCanvas, setBrushSize, setColor, setTool } from '../../redux/actions/toolbarActions';
 import classes from './Toolbar.module.css';
 
 function Toolbar({ onClear }) {
   const dispatch = useDispatch();
-  const { currentTool, color } = useSelector((state) => state.toolbar);
+  const { currentTool, color, brushSize } = useSelector((state) => state.toolbar);
 
   const tools = [
     { id: 'pencil', icon: '✏️', label: 'Карандаш', hint: 'Рисование тонкой линией' },
     { id: 'eraser', icon: '🧽', label: 'Ластик', hint: 'Стирание фрагментов' },
     { id: 'text', icon: 'T', label: 'Текст', hint: 'Добавление текста по клику на холст' },
-    { id: 'shape', icon: '▢', label: 'Фигура', hint: 'Нарисовать прямоугольную фигуру' },
+    { id: 'rectangle', icon: '▢', label: 'Прямоугольник', hint: 'Нарисовать прямоугольную фигуру' },
+    { id: 'circle', icon: '◯', label: 'Круг', hint: 'Нарисовать круг или эллипс' },
+    { id: 'line', icon: '／', label: 'Линия', hint: 'Нарисовать прямую линию' },
+    { id: 'arrow', icon: '↗', label: 'Стрелка', hint: 'Нарисовать стрелку' },
   ];
 
   const handleClear = () => {
@@ -51,6 +54,22 @@ function Toolbar({ onClear }) {
             title="Выбрать цвет"
           />
         </label>
+      </div>
+
+      <div className={classes.group}>
+        <span className={classes.groupLabel}>Толщина</span>
+        <div className={classes.sizeBlock}>
+          <input
+            type="range"
+            min="2"
+            max="18"
+            step="1"
+            value={brushSize}
+            onChange={(event) => dispatch(setBrushSize(Number(event.target.value)))}
+            className={classes.sizeSlider}
+          />
+          <span className={classes.sizeValue}>{brushSize}px</span>
+        </div>
       </div>
 
       <button type="button" className={classes.clear} onClick={handleClear}>

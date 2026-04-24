@@ -10,6 +10,7 @@ function Home() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [boards, setBoards] = useState([]);
   const [title, setTitle] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notifications, setNotifications] = useState([]);
@@ -21,6 +22,11 @@ function Home() {
       setNotifications((current) => current.filter((item) => item.id !== id));
     }, 3200);
   };
+
+  const filteredBoards = boards.filter((board) => {
+    const haystack = `${board.title} ${board.owner_name || ''}`.toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -196,6 +202,13 @@ function Home() {
             {loading ? 'Сохранение...' : 'Создать доску'}
           </button>
         </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Поиск по названию или владельцу"
+          className={`${classes.input} ${classes.searchInput}`}
+        />
         <Link to="/about" className={classes.inlineLink}>
           Подробнее о проекте
         </Link>
@@ -205,7 +218,7 @@ function Home() {
       {loading && <div className={classes.info}>Загрузка досок и синхронизация рабочего пространства...</div>}
 
       <div className={classes.grid}>
-        {boards.length === 0 && !loading ? (
+        {filteredBoards.length === 0 && !loading ? (
           <div className={classes.emptyState}>
             <div className={classes.emptyIllustration} aria-hidden="true">
               <span className={classes.emptyCircle} />
@@ -213,10 +226,14 @@ function Home() {
               <span className={classes.emptyLineShort} />
             </div>
             <h3>Пока нет доступных досок</h3>
-            <p>Создай первую доску или попроси владельца выдать тебе доступ к уже существующей.</p>
+            <p>
+              {search.trim()
+                ? 'По текущему запросу ничего не найдено. Попробуй изменить поиск.'
+                : 'Создай первую доску или попроси владельца выдать тебе доступ к уже существующей.'}
+            </p>
           </div>
         ) : (
-          boards.map((board) => (
+          filteredBoards.map((board) => (
             <BoardCard
               key={board.id}
               id={board.id}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MessageItem from '../../components/MessageItem/MessageItem';
 import classes from './Messages.module.css';
@@ -11,20 +11,53 @@ const mockMessages = [
 ];
 
 function Messages() {
-  // Получаем ID доски из URL (динамический параметр)
   const { boardId } = useParams();
+  const [messages, setMessages] = useState(mockMessages);
+  const [draft, setDraft] = useState('');
+
+  const participantCount = useMemo(() => new Set(messages.map((message) => message.author)).size, [messages]);
+
+  const handleSend = () => {
+    const text = draft.trim();
+    if (!text) {
+      return;
+    }
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: Date.now(),
+        author: 'Вы',
+        text,
+        time: new Date().toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      },
+    ]);
+    setDraft('');
+  };
 
   return (
-    <div className={classes.messages}>
+    <section className={classes.messages}>
       <header className={classes.messagesHeader}>
-        <Link to={`/board/${boardId}`} className={classes.backLink}>
-          ← Вернуться к доске №{boardId}
-        </Link>
-        <h2 className={classes.messagesTitle}>Чат доски</h2>
+        <div className={classes.headerCopy}>
+          <Link to={`/board/${boardId}`} className={classes.backLink}>
+            ← Вернуться к доске №{boardId}
+          </Link>
+          <h2 className={classes.messagesTitle}>Чат доски</h2>
+          <p className={classes.subtitle}>
+            Обсуждайте идеи параллельно с рисованием, фиксируйте решения и держите весь контекст рядом с холстом.
+          </p>
+        </div>
+        <div className={classes.headerBadge}>
+          <span>Участники</span>
+          <strong>{participantCount}</strong>
+        </div>
       </header>
-      
+
       <div className={classes.messagesList}>
-        {mockMessages.map(message => (
+        {messages.map((message) => (
           <MessageItem
             key={message.id}
             author={message.author}
@@ -33,16 +66,26 @@ function Messages() {
           />
         ))}
       </div>
-      
+
       <div className={classes.messageInput}>
-        <input 
-          type="text" 
-          placeholder="Введите сообщение..." 
+        <input
+          type="text"
+          placeholder="Введите сообщение..."
           className={classes.input}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              handleSend();
+            }
+          }}
         />
-        <button className={classes.sendBtn}>Отправить</button>
+        <button type="button" className={classes.sendBtn} onClick={handleSend} disabled={!draft.trim()}>
+          Отправить
+        </button>
       </div>
-    </div>
+    </section>
   );
 }
 
