@@ -38,8 +38,13 @@ class AuthController {
   async register(req, res) {
     const { name, email, password } = req.body;
 
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      return res.status(400).json({ message: 'Имя должно содержать минимум 2 символа' });
+    if (
+      !name ||
+      typeof name !== 'string' ||
+      name.trim().length < 2 ||
+      name.trim().length > 120
+    ) {
+      return res.status(400).json({ message: 'Имя должно содержать от 2 до 120 символов' });
     }
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
