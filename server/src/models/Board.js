@@ -1,12 +1,12 @@
 const { pool } = require('../config/db');
 
 class Board {
-  static async create({ title, ownerId }) {
+  static async create({ title, description = '', ownerId }) {
     const { rows } = await pool.query(
-      `INSERT INTO boards (title, owner_id)
-       VALUES ($1, $2)
+      `INSERT INTO boards (title, description, owner_id)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [title, ownerId]
+      [title, description, ownerId]
     );
 
     return this.findDetailedById(rows[0].id);
@@ -18,6 +18,7 @@ class Board {
         SELECT DISTINCT
           b.id,
           b.title,
+          b.description,
           b.owner_id,
           b.snapshot,
           b.created_at,
@@ -46,6 +47,7 @@ class Board {
         SELECT
           b.id,
           b.title,
+          b.description,
           b.owner_id,
           b.snapshot,
           b.created_at,
@@ -113,12 +115,14 @@ class Board {
     return rows.length > 0;
   }
 
-  static async update(id, { title }) {
+  static async update(id, { title, description }) {
     await pool.query(
       `UPDATE boards
-       SET title = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [title, id]
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           updated_at = NOW()
+       WHERE id = $3`,
+      [title ?? null, description ?? null, id]
     );
 
     return this.findDetailedById(id);
@@ -150,6 +154,46 @@ class Board {
     );
 
     return this.findDetailedById(boardId);
+  }
+
+  static async createEvent({ boardId = null, actorId, action, boardTitle, metadata = {} }) {
+    const { rows } = await pool.query(
+      `INSERT INTO board_events (board_id, actor_id, action, board_title, metadata)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       RETURNING *`,
+      [boardId, actorId, action, boardTitle, JSON.stringify(metadata)]
+    );
+
+    return rows[0];
+  }
+
+  static async getRecentActivity(user, limit = 12) {
+    const { rows } = await pool.query(
+      `
+        SELECT DISTINCT
+          be.id,
+          be.board_id,
+          be.action,
+          be.board_title,
+          be.metadata,
+          be.created_at,
+          actor.id AS actor_id,
+          actor.name AS actor_name
+        FROM board_events be
+        JOIN users actor ON actor.id = be.actor_id
+        LEFT JOIN boards b ON b.id = be.board_id
+        LEFT JOIN board_members bm ON bm.board_id = be.board_id
+        WHERE $2 = 'admin'
+          OR be.actor_id = $1
+          OR b.owner_id = $1
+          OR bm.user_id = $1
+        ORDER BY be.created_at DESC
+        LIMIT $3
+      `,
+      [user.id, user.role, limit]
+    );
+
+    return rows;
   }
 }
 

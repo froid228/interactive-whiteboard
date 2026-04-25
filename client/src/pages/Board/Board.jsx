@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
 import { boardsAPI, getAuthToken } from '../../api/boards';
+import { useNotifications } from '../../context/NotificationContext';
 import Toolbar from '../../components/Toolbar/Toolbar';
 import classes from './Board.module.css';
 
@@ -115,9 +116,12 @@ function drawSnapshot(context, snapshot) {
 
 function getCoordinates(event, canvas) {
   const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+  const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
   };
 }
 
@@ -142,6 +146,7 @@ function getToolLabel(tool) {
 function Board() {
   const { id } = useParams();
   const { currentTool, color, brushSize } = useSelector((state) => state.toolbar);
+  const { notify } = useNotifications();
   const canvasRef = useRef(null);
   const textInputRef = useRef(null);
   const socketRef = useRef(null);
@@ -152,12 +157,17 @@ function Board() {
   const historyIndexRef = useRef(-1);
   const [board, setBoard] = useState(null);
   const [shareEmail, setShareEmail] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
   const [status, setStatus] = useState('Загрузка доски...');
   const [error, setError] = useState('');
+  const [loadingBoard, setLoadingBoard] = useState(true);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [textDraft, setTextDraft] = useState(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
   const syncHistoryControls = useCallback(() => {
     setCanUndo(historyIndexRef.current > 0);
@@ -232,20 +242,25 @@ function Board() {
 
   useEffect(() => {
     const loadBoard = async () => {
+      setLoadingBoard(true);
       setError('');
       try {
         const boardData = await boardsAPI.getById(id);
         setBoard(boardData);
+        setDescriptionDraft(boardData.description || '');
         drawCurrentSnapshot(boardData.snapshot);
         seedHistory(boardData.snapshot);
         setStatus('Подключение к комнате доски...');
       } catch (requestError) {
         setError(requestError.message);
+        notify(requestError.message, 'danger');
+      } finally {
+        setLoadingBoard(false);
       }
     };
 
     loadBoard();
-  }, [id, seedHistory]);
+  }, [id, notify, seedHistory]);
 
   useEffect(() => {
     if (!textDraft || !textInputRef.current) {
@@ -262,9 +277,17 @@ function Board() {
     }
 
     const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
       const parent = canvas.parentElement;
-      canvas.width = parent.clientWidth - 2;
-      canvas.height = parent.clientHeight - 2;
+      const nextWidth = Math.max(Math.round(rect.width || parent.clientWidth || 0), 320);
+      const nextHeight = Math.max(Math.round(rect.height || parent.clientHeight || 0), 420);
+
+      if (canvas.width === nextWidth && canvas.height === nextHeight) {
+        return;
+      }
+
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
       const context = canvas.getContext('2d');
       drawSnapshot(context, snapshotRef.current);
       if (remoteSegmentRef.current) {
@@ -293,6 +316,7 @@ function Board() {
       socket.emit('join-board', { boardId: id }, (response) => {
         if (!response?.ok) {
           setError(response?.message || 'Не удалось подключиться к доске');
+          notify(response?.message || 'Не удалось подключиться к доске', 'danger');
           return;
         }
 
@@ -323,12 +347,13 @@ function Board() {
 
     socket.on('connect_error', () => {
       setError('Не удалось подключиться к realtime-серверу');
+      notify('Не удалось подключиться к realtime-серверу', 'danger');
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [board, id, seedHistory]);
+  }, [board, id, notify, seedHistory]);
 
   const handlePointerDown = (event) => {
     const canvas = canvasRef.current;
@@ -448,15 +473,71 @@ function Board() {
       return;
     }
 
+    setSharing(true);
     try {
       const updatedBoard = await boardsAPI.share(id, shareEmail.trim());
       setBoard(updatedBoard);
+      notify(`Доступ к доске выдан для ${shareEmail.trim()}`, 'success');
       setShareEmail('');
       setError('');
     } catch (requestError) {
       setError(requestError.message);
+      notify(requestError.message, 'danger');
+    } finally {
+      setSharing(false);
     }
   };
+
+  const handleSaveDetails = async () => {
+    setSavingDetails(true);
+    try {
+      const updatedBoard = await boardsAPI.update(id, { description: descriptionDraft.trim() });
+      setBoard(updatedBoard);
+      setDescriptionDraft(updatedBoard.description || '');
+      notify('Описание доски сохранено', 'success');
+      setError('');
+    } catch (requestError) {
+      setError(requestError.message);
+      notify(requestError.message, 'danger');
+    } finally {
+      setSavingDetails(false);
+    }
+  };
+
+  const handleZoomOut = () => {
+    setZoom((current) => Math.max(0.5, Number((current - 0.1).toFixed(2))));
+  };
+
+  const handleZoomIn = () => {
+    setZoom((current) => Math.min(2, Number((current + 0.1).toFixed(2))));
+  };
+
+  const handleZoomReset = () => {
+    setZoom(1);
+  };
+
+  if (loadingBoard && !board) {
+    return (
+      <section className={classes.board}>
+        <div className={classes.skeletonHeader}>
+          <div className={classes.skeletonTitle} />
+          <div className={classes.skeletonActions}>
+            <span className={classes.skeletonChip} />
+            <span className={classes.skeletonChip} />
+            <span className={classes.skeletonChip} />
+          </div>
+        </div>
+        <div className={classes.workspace}>
+          <aside className={classes.sidebar}>
+            <div className={classes.skeletonPanel} />
+            <div className={classes.skeletonPanel} />
+            <div className={classes.skeletonPanelTall} />
+          </aside>
+          <div className={classes.skeletonCanvas} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={classes.board}>
@@ -480,6 +561,18 @@ function Board() {
           <button type="button" onClick={handleClearBoard} className={classes.clearButton}>
             Очистить холст
           </button>
+          <div className={classes.zoomControls}>
+            <button type="button" onClick={handleZoomOut} className={classes.secondaryAction} disabled={zoom <= 0.5}>
+              -
+            </button>
+            <span className={classes.zoomValue}>{Math.round(zoom * 100)}%</span>
+            <button type="button" onClick={handleZoomIn} className={classes.secondaryAction} disabled={zoom >= 2}>
+              +
+            </button>
+            <button type="button" onClick={handleZoomReset} className={classes.secondaryAction} disabled={zoom === 1}>
+              100%
+            </button>
+          </div>
           <Link to={`/board/${id}/messages`} className={classes.chatLink}>
             Сообщения
           </Link>
@@ -504,6 +597,25 @@ function Board() {
             </ul>
           </div>
 
+          <div className={classes.panel}>
+            <h3>Описание доски</h3>
+            <textarea
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              placeholder="Опиши назначение доски, сценарий использования или договорённости команды"
+              className={classes.descriptionInput}
+              maxLength={500}
+            />
+            <button
+              type="button"
+              className={classes.shareButton}
+              onClick={handleSaveDetails}
+              disabled={savingDetails}
+            >
+              {savingDetails ? 'Сохраняем...' : 'Сохранить описание'}
+            </button>
+          </div>
+
           <form className={classes.panel} onSubmit={handleShare}>
             <h3>Выдать доступ</h3>
             <input
@@ -513,8 +625,8 @@ function Board() {
               placeholder="user@example.com"
               className={classes.shareInput}
             />
-            <button type="submit" className={classes.shareButton}>
-              Добавить участника
+            <button type="submit" className={classes.shareButton} disabled={sharing}>
+              {sharing ? 'Отправляем...' : 'Добавить участника'}
             </button>
           </form>
         </aside>
@@ -525,42 +637,51 @@ function Board() {
             <span>Цвет: {currentTool === 'eraser' ? 'ластик' : color}</span>
             <span>Толщина: {currentTool === 'eraser' ? `${ERASER_WIDTH}px` : `${brushSize}px`}</span>
           </div>
-          <div className={classes.canvasStage}>
-            <canvas
-              ref={canvasRef}
-              className={classes.canvas}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={finishStroke}
-              onPointerLeave={finishStroke}
-            />
-            {textDraft && (
-              <textarea
-                ref={textInputRef}
-                value={textDraft.value}
-                onChange={(event) =>
-                  setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
-                }
-                onBlur={commitTextDraft}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    event.preventDefault();
-                    cancelTextDraft();
-                  }
+          <div className={classes.canvasViewport}>
+            <div
+              className={classes.canvasScale}
+              style={{
+                transform: `scale(${zoom})`,
+              }}
+            >
+              <div className={classes.canvasStage}>
+                <canvas
+                  ref={canvasRef}
+                  className={classes.canvas}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={finishStroke}
+                  onPointerLeave={finishStroke}
+                />
+                {textDraft && (
+                  <textarea
+                    ref={textInputRef}
+                    value={textDraft.value}
+                    onChange={(event) =>
+                      setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
+                    }
+                    onBlur={commitTextDraft}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelTextDraft();
+                      }
 
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    commitTextDraft();
-                  }
-                }}
-                placeholder="Введите текст..."
-                className={classes.textEditor}
-                style={{
-                  left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
-                  top: textDraft.y,
-                }}
-              />
-            )}
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        commitTextDraft();
+                      }
+                    }}
+                    placeholder="Введите текст..."
+                    className={classes.textEditor}
+                    style={{
+                      left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
+                      top: textDraft.y,
+                    }}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

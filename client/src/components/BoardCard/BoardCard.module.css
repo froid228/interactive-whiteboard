@@ -63,7 +63,9 @@
 .previewDot,
 .previewLineLong,
 .previewLineShort,
-.previewShape {
+.previewShape,
+.previewSegment,
+.previewText {
   position: absolute;
   display: block;
 }
@@ -106,6 +108,58 @@
   transform: rotate(10deg);
 }
 
+.previewSegment {
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.previewStroke {
+  height: 4px;
+  border-radius: 999px;
+}
+
+.previewArrow {
+  height: 4px;
+  border-top: 2px solid currentColor;
+  color: inherit;
+}
+
+.previewArrow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.previewRect,
+.previewCircle {
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.previewRect {
+  border-radius: 14px;
+}
+
+.previewCircle {
+  border-radius: 999px;
+}
+
+.previewText {
+  max-width: 42%;
+  overflow: hidden;
+  color: #fff7f2;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .cardHeader {
   display: grid;
   gap: 12px;
@@ -124,6 +178,12 @@
 .cardTitle {
   margin: 0;
   font-size: 1.24rem;
+}
+
+.cardDescription {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
 }
 
 .meta {

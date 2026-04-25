@@ -1,66 +1,84 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import BoardCard from '../../components/BoardCard/BoardCard';
 import { boardsAPI } from '../../api/boards';
+import { useNotifications } from '../../context/NotificationContext';
 import classes from './Home.module.css';
+
+function formatActivity(item) {
+  const actor = item.actor_name || 'Кто-то';
+  const title = item.board_title ? `«${item.board_title}»` : 'доску';
+
+  switch (item.action) {
+    case 'created':
+      return `${actor} создал доску ${title}`;
+    case 'deleted':
+      return `${actor} удалил доску ${title}`;
+    case 'shared':
+      return `${actor} выдал доступ к доске ${title}${item.metadata?.sharedWithName ? ` для ${item.metadata.sharedWithName}` : ''}`;
+    case 'updated':
+      return `${actor} обновил доску ${title}`;
+    default:
+      return `${actor} изменил доску ${title}`;
+  }
+}
 
 function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { notify } = useNotifications();
   const [boards, setBoards] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [title, setTitle] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState('');
-  const [notifications, setNotifications] = useState([]);
-
-  const pushNotification = (message, tone = 'info') => {
-    const id = Date.now() + Math.random();
-    setNotifications((current) => [...current, { id, message, tone }]);
-    window.setTimeout(() => {
-      setNotifications((current) => current.filter((item) => item.id !== id));
-    }, 3200);
-  };
 
   const filteredBoards = boards.filter((board) => {
     const haystack = `${board.title} ${board.owner_name || ''}`.toLowerCase();
     return haystack.includes(search.trim().toLowerCase());
   });
 
+  const prependActivity = useCallback((item) => {
+    setActivity((current) => [item, ...current].slice(0, 12));
+  }, []);
+
+  const loadWorkspace = useCallback(async () => {
+    setLoading(true);
+    setActivityLoading(true);
+    setError('');
+
+    try {
+      const [boardsData, activityData] = await Promise.all([
+        boardsAPI.getAll(),
+        boardsAPI.getActivity(),
+      ]);
+      setBoards(boardsData);
+      setActivity(activityData);
+    } catch (requestError) {
+      setError(requestError.message);
+      notify(requestError.message, 'danger');
+    } finally {
+      setLoading(false);
+      setActivityLoading(false);
+    }
+  }, [notify]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       setBoards([]);
+      setActivity([]);
       return;
     }
 
-    let cancelled = false;
-
-    const loadBoards = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await boardsAPI.getAll();
-        if (!cancelled) {
-          setBoards(data);
-        }
-      } catch (requestError) {
-        if (!cancelled) {
-          setError(requestError.message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    const load = async () => {
+      await loadWorkspace();
     };
 
-    loadBoards();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated]);
+    load();
+  }, [isAuthenticated, loadWorkspace]);
 
   const handleCreate = async () => {
     const trimmedTitle = title.trim();
@@ -72,13 +90,22 @@ function Home() {
     setLoading(true);
     setError('');
     try {
-      const createdBoard = await boardsAPI.create(trimmedTitle);
+      const createdBoard = await boardsAPI.create({ title: trimmedTitle });
       setBoards((current) => [createdBoard, ...current]);
       setTitle('');
-      pushNotification(`Доска "${createdBoard.title}" создана`, 'success');
+      notify(`${user?.name || 'Пользователь'} создал доску «${createdBoard.title}»`, 'success');
+      prependActivity({
+        id: Date.now(),
+        action: 'created',
+        board_title: createdBoard.title,
+        actor_name: user?.name || 'Вы',
+        created_at: new Date().toISOString(),
+        metadata: {},
+      });
       navigate(`/board/${createdBoard.id}`);
     } catch (requestError) {
       setError(requestError.message);
+      notify(requestError.message, 'danger');
     } finally {
       setLoading(false);
     }
@@ -89,12 +116,18 @@ function Home() {
       const deletedBoard = boards.find((board) => board.id === id);
       await boardsAPI.remove(id);
       setBoards((current) => current.filter((board) => board.id !== id));
-      pushNotification(
-        `Доска "${deletedBoard?.title || 'Без названия'}" удалена`,
-        'danger'
-      );
+      notify(`${user?.name || 'Пользователь'} удалил доску «${deletedBoard?.title || 'Без названия'}»`, 'danger');
+      prependActivity({
+        id: Date.now(),
+        action: 'deleted',
+        board_title: deletedBoard?.title || 'Без названия',
+        actor_name: user?.name || 'Вы',
+        created_at: new Date().toISOString(),
+        metadata: {},
+      });
     } catch (requestError) {
       setError(requestError.message);
+      notify(requestError.message, 'danger');
     }
   };
 
@@ -105,12 +138,22 @@ function Home() {
     }
 
     try {
-      const updatedBoard = await boardsAPI.update(id, updatedTitle.trim());
+      const updatedBoard = await boardsAPI.update(id, { title: updatedTitle.trim() });
       setBoards((current) =>
         current.map((board) => (board.id === id ? { ...board, ...updatedBoard } : board))
       );
+      notify(`${user?.name || 'Пользователь'} обновил доску «${updatedBoard.title}»`, 'info');
+      prependActivity({
+        id: Date.now(),
+        action: 'updated',
+        board_title: updatedBoard.title,
+        actor_name: user?.name || 'Вы',
+        created_at: new Date().toISOString(),
+        metadata: { changedFields: ['title'] },
+      });
     } catch (requestError) {
       setError(requestError.message);
+      notify(requestError.message, 'danger');
     }
   };
 
@@ -155,25 +198,6 @@ function Home() {
 
   return (
     <section className={classes.home}>
-      {notifications.length > 0 && (
-        <div className={classes.notifications} aria-live="polite">
-          {notifications.map((item) => (
-            <div
-              key={item.id}
-              className={`${classes.notification} ${
-                item.tone === 'success'
-                  ? classes.notificationSuccess
-                  : item.tone === 'danger'
-                    ? classes.notificationDanger
-                    : classes.notificationInfo
-              }`}
-            >
-              {item.message}
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className={classes.topline}>
         <div>
           <p className={classes.kicker}>Рабочее пространство</p>
@@ -215,9 +239,52 @@ function Home() {
       </div>
 
       {error && <div className={classes.error}>Ошибка: {error}</div>}
-      {loading && <div className={classes.info}>Загрузка досок и синхронизация рабочего пространства...</div>}
+
+      <div className={classes.overview}>
+        <section className={classes.activityPanel}>
+          <div className={classes.activityHeader}>
+            <div>
+              <p className={classes.activityKicker}>Системные события</p>
+              <h2 className={classes.activityTitle}>Что происходит в рабочем пространстве</h2>
+            </div>
+            <button type="button" className={classes.refreshButton} onClick={loadWorkspace} disabled={loading || activityLoading}>
+              Обновить
+            </button>
+          </div>
+
+          <div className={classes.activityList}>
+            {activityLoading && activity.length === 0
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`activity-skeleton-${index}`} className={classes.activitySkeleton} />
+                ))
+              : activity.map((item) => (
+                  <article key={item.id} className={classes.activityItem}>
+                    <p className={classes.activityText}>{formatActivity(item)}</p>
+                    <span className={classes.activityTime}>
+                      {new Date(item.created_at).toLocaleString('ru-RU')}
+                    </span>
+                  </article>
+                ))}
+
+            {!activityLoading && activity.length === 0 ? (
+              <p className={classes.activityEmpty}>Пока нет событий. Создай доску или выдай кому-то доступ, и активность появится здесь.</p>
+            ) : null}
+          </div>
+        </section>
+      </div>
 
       <div className={classes.grid}>
+        {loading && boards.length === 0
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <article key={`board-skeleton-${index}`} className={classes.skeletonCard}>
+                <div className={classes.skeletonPreview} />
+                <div className={classes.skeletonLine} />
+                <div className={`${classes.skeletonLine} ${classes.skeletonLineShort}`} />
+                <div className={`${classes.skeletonLine} ${classes.skeletonLineTiny}`} />
+              </article>
+            ))
+          : null}
+
         {filteredBoards.length === 0 && !loading ? (
           <div className={classes.emptyState}>
             <div className={classes.emptyIllustration} aria-hidden="true">
@@ -238,9 +305,11 @@ function Home() {
               key={board.id}
               id={board.id}
               title={board.title}
+              description={board.description}
               ownerName={board.owner_name}
               isCollaborator={board.is_collaborator}
               lastModified={board.updated_at || board.created_at}
+              snapshot={board.snapshot}
               onDelete={() => handleDelete(board.id)}
               onEdit={() => handleEdit(board.id, board.title)}
             />

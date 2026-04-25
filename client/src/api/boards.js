@@ -41,16 +41,25 @@ export const authAPI = {
 
 export const boardsAPI = {
   getAll: () => request('/boards'),
+  getActivity: () => request('/boards/activity'),
   getById: (id) => request(`/boards/${id}`),
-  create: (title) =>
+  create: (payload) =>
     request('/boards', {
       method: 'POST',
-      body: JSON.stringify({ title }),
+      body: JSON.stringify(
+        typeof payload === 'string'
+          ? { title: payload }
+          : payload
+      ),
     }),
-  update: (id, title) =>
+  update: (id, payload) =>
     request(`/boards/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ title }),
+      body: JSON.stringify(
+        typeof payload === 'string'
+          ? { title: payload }
+          : payload
+      ),
     }),
   remove: (id) =>
     request(`/boards/${id}`, {

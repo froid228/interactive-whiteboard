@@ -1,0 +1,49 @@
+.notifications {
+  position: fixed;
+  top: 96px;
+  right: 20px;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.notification {
+  padding: 14px 16px;
+  border-radius: 18px;
+  color: #fffaf6;
+  box-shadow: 0 18px 36px rgba(47, 36, 51, 0.16);
+  animation: toastIn 0.28s ease both;
+}
+
+.notificationSuccess {
+  background: linear-gradient(135deg, #b24f38, #8e4f67);
+}
+
+.notificationDanger {
+  background: linear-gradient(135deg, #8d2f2f, #7f3f58);
+}
+
+.notificationInfo {
+  background: linear-gradient(135deg, #6d5a63, #433041);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .notifications {
+    top: 84px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}

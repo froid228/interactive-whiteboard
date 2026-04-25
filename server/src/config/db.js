@@ -94,6 +94,7 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS boards (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
       owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
       created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -103,10 +104,17 @@ async function ensureSchema() {
 
   await pool.query(`
     ALTER TABLE boards
+    ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '',
     ADD COLUMN IF NOT EXISTS owner_id INTEGER,
     ADD COLUMN IF NOT EXISTS snapshot JSONB DEFAULT '[]'::jsonb,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
     ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+  `);
+
+  await pool.query(`
+    UPDATE boards
+    SET description = ''
+    WHERE description IS NULL;
   `);
 
   await pool.query(`
@@ -135,6 +143,18 @@ async function ensureSchema() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS board_events (
+      id SERIAL PRIMARY KEY,
+      board_id INTEGER REFERENCES boards(id) ON DELETE SET NULL,
+      actor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      action VARCHAR(32) NOT NULL,
+      board_title VARCHAR(255) NOT NULL,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+  `);
+
   await seedDefaults();
 
   await pool.query(`
@@ -149,6 +169,7 @@ async function ensureSchema() {
   await pool.query(`
     ALTER TABLE boards
     ALTER COLUMN title SET NOT NULL,
+    ALTER COLUMN description SET NOT NULL,
     ALTER COLUMN owner_id SET NOT NULL,
     ALTER COLUMN snapshot SET NOT NULL,
     ALTER COLUMN created_at SET NOT NULL,

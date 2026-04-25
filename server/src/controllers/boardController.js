@@ -5,9 +5,13 @@ function validateBoardTitle(title) {
   return typeof title === 'string' && title.trim().length >= 3 && title.trim().length <= 120;
 }
 
+function validateBoardDescription(description) {
+  return description === undefined || (typeof description === 'string' && description.trim().length <= 500);
+}
+
 class BoardController {
   async create(req, res) {
-    const { title } = req.body;
+    const { title, description } = req.body;
 
     if (!validateBoardTitle(title)) {
       return res.status(400).json({
@@ -15,9 +19,23 @@ class BoardController {
       });
     }
 
+    if (!validateBoardDescription(description)) {
+      return res.status(400).json({
+        message: 'Описание доски должно содержать не более 500 символов',
+      });
+    }
+
     const board = await Board.create({
       title: title.trim(),
+      description: (description || '').trim(),
       ownerId: req.user.id,
+    });
+
+    await Board.createEvent({
+      boardId: board.id,
+      actorId: req.user.id,
+      action: 'created',
+      boardTitle: board.title,
     });
 
     return res.status(201).json(board);
@@ -46,11 +64,21 @@ class BoardController {
 
   async update(req, res) {
     const boardId = Number(req.params.id);
-    const { title } = req.body;
+    const { title, description } = req.body;
 
-    if (!validateBoardTitle(title)) {
+    if (title === undefined && description === undefined) {
+      return res.status(400).json({ message: 'Нужно передать название или описание доски' });
+    }
+
+    if (title !== undefined && !validateBoardTitle(title)) {
       return res.status(400).json({
         message: 'Название доски должно содержать от 3 до 120 символов',
+      });
+    }
+
+    if (!validateBoardDescription(description)) {
+      return res.status(400).json({
+        message: 'Описание доски должно содержать не более 500 символов',
       });
     }
 
@@ -59,7 +87,36 @@ class BoardController {
       return res.status(403).json({ message: 'Нет прав для редактирования этой доски' });
     }
 
-    const updated = await Board.update(boardId, { title: title.trim() });
+    const currentBoard = await Board.findDetailedById(boardId);
+    if (!currentBoard) {
+      return res.status(404).json({ message: 'Доска не найдена' });
+    }
+
+    const nextTitle = title !== undefined ? title.trim() : undefined;
+    const nextDescription = description !== undefined ? description.trim() : undefined;
+    const updated = await Board.update(boardId, {
+      title: nextTitle,
+      description: nextDescription,
+    });
+
+    const changedFields = [];
+    if (nextTitle !== undefined && nextTitle !== currentBoard.title) {
+      changedFields.push('title');
+    }
+    if (nextDescription !== undefined && nextDescription !== currentBoard.description) {
+      changedFields.push('description');
+    }
+
+    if (changedFields.length > 0) {
+      await Board.createEvent({
+        boardId,
+        actorId: req.user.id,
+        action: 'updated',
+        boardTitle: updated.title,
+        metadata: { changedFields },
+      });
+    }
+
     return res.json(updated);
   }
 
@@ -71,7 +128,15 @@ class BoardController {
       return res.status(403).json({ message: 'Нет прав для удаления этой доски' });
     }
 
+    const board = await Board.findDetailedById(boardId);
     await Board.delete(boardId);
+
+    await Board.createEvent({
+      actorId: req.user.id,
+      action: 'deleted',
+      boardTitle: board?.title || `Доска #${boardId}`,
+    });
+
     return res.json({ message: 'Доска удалена' });
   }
 
@@ -103,7 +168,25 @@ class BoardController {
     }
 
     const updated = await Board.addCollaborator(boardId, collaborator.id);
+
+    await Board.createEvent({
+      boardId,
+      actorId: req.user.id,
+      action: 'shared',
+      boardTitle: updated.title,
+      metadata: {
+        sharedWithId: collaborator.id,
+        sharedWithName: collaborator.name,
+        sharedWithEmail: collaborator.email,
+      },
+    });
+
     return res.json(updated);
+  }
+
+  async getActivity(req, res) {
+    const activity = await Board.getRecentActivity(req.user);
+    return res.json(activity);
   }
 }
 
