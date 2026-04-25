@@ -122,8 +122,28 @@ function renderPreview(snapshot) {
   });
 }
 
+const TITLE_LIMIT = 120;
+
 const BoardCard = React.memo(({ id, title, description, ownerName, isCollaborator, lastModified, snapshot, onDelete, onEdit }) => {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(title);
+
+  const handleSaveEdit = async () => {
+    const trimmed = draftTitle.trim();
+    if (!trimmed || trimmed === title) {
+      setIsEditing(false);
+      setDraftTitle(title);
+      return;
+    }
+
+    try {
+      await onEdit(trimmed);
+      setIsEditing(false);
+    } catch (error) {
+      // Parent handles notifications; keep form open for correction.
+    }
+  };
 
   return (
     <article className={classes.card}>
@@ -152,6 +172,37 @@ const BoardCard = React.memo(({ id, title, description, ownerName, isCollaborato
       </Link>
 
       <div className={classes.actions}>
+        {isEditing ? (
+          <div className={classes.editForm}>
+            <input
+              type="text"
+              value={draftTitle}
+              maxLength={TITLE_LIMIT}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              className={classes.editInput}
+              placeholder="Новое название доски"
+            />
+            <div className={classes.editMeta}>
+              <span className={classes.counter}>{draftTitle.length}/{TITLE_LIMIT}</span>
+              <div className={classes.editFormActions}>
+                <button
+                  type="button"
+                  className={classes.cancelBtn}
+                  onClick={() => {
+                    setDraftTitle(title);
+                    setIsEditing(false);
+                  }}
+                >
+                  Отмена
+                </button>
+                <button type="button" className={classes.editBtn} onClick={handleSaveEdit}>
+                  Сохранить
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {isConfirmingDelete ? (
           <>
             <button type="button" className={classes.cancelBtn} onClick={() => setIsConfirmingDelete(false)}>
@@ -170,7 +221,7 @@ const BoardCard = React.memo(({ id, title, description, ownerName, isCollaborato
           </>
         ) : (
           <>
-            <button type="button" className={classes.editBtn} onClick={onEdit}>
+            <button type="button" className={classes.editBtn} onClick={() => setIsEditing(true)}>
               Переименовать
             </button>
             <button type="button" className={classes.deleteBtn} onClick={() => setIsConfirmingDelete(true)}>

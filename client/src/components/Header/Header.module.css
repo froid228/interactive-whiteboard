@@ -63,6 +63,191 @@
   justify-content: flex-end;
 }
 
+.notificationsWrap {
+  position: relative;
+}
+
+.bellButton {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 240, 232, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 248, 241, 0.08);
+  color: #fff7f2;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.bellButton:hover {
+  transform: translateY(-1px);
+  background: rgba(200, 109, 76, 0.14);
+}
+
+.bellIcon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.bellBadge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.notificationsPanel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(214, 161, 93, 0.12), transparent 24%),
+    rgba(255, 251, 247, 0.98);
+  border: 1px solid rgba(100, 78, 86, 0.16);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(100, 78, 86, 0.1);
+  color: #2f2433;
+  background: rgba(255, 245, 238, 0.72);
+}
+
+.panelHeader span {
+  color: #6b5a63;
+  font-size: 0.86rem;
+  display: block;
+  margin-top: 4px;
+}
+
+.markReadButton {
+  align-self: center;
+  border: 1px solid rgba(100, 78, 86, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #2f2433;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.markReadButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(47, 36, 51, 0.08);
+}
+
+.markReadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.panelList {
+  max-height: 360px;
+  overflow-y: auto;
+  display: grid;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 18px 0;
+}
+
+.filterButton {
+  border: 1px solid rgba(100, 78, 86, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #5a4652;
+  font-weight: 700;
+}
+
+.filterActive {
+  background: linear-gradient(135deg, rgba(178, 79, 56, 0.16), rgba(127, 63, 88, 0.16));
+  color: #2f2433;
+  border-color: rgba(178, 79, 56, 0.22);
+}
+
+.panelItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(100, 78, 86, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.itemIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.itemBody {
+  display: grid;
+  gap: 6px;
+}
+
+.itemCreated {
+  background: rgba(178, 79, 56, 0.12);
+  color: #9d402c;
+}
+
+.itemDeleted {
+  background: rgba(141, 47, 47, 0.12);
+  color: #8d2f2f;
+}
+
+.itemShared {
+  background: rgba(127, 63, 88, 0.12);
+  color: #7f3f58;
+}
+
+.itemUpdated {
+  background: rgba(107, 90, 99, 0.12);
+  color: #5a4652;
+}
+
+.panelText,
+.panelEmpty {
+  margin: 0;
+  color: #2f2433;
+  line-height: 1.45;
+}
+
+.panelTime {
+  color: #6b5a63;
+  font-size: 0.82rem;
+}
+
+.panelEmpty {
+  padding: 18px;
+ }
+
 .userMeta {
   display: flex;
   flex-direction: column;
@@ -100,6 +285,11 @@
   .userMeta {
     align-items: flex-start;
   }
+
+  .notificationsPanel {
+    right: auto;
+    left: 0;
+  }
 }
 
 @media (max-width: 640px) {
@@ -121,5 +311,29 @@
 
   .user {
     justify-content: stretch;
+  }
+
+  .notificationsWrap {
+    width: 100%;
+  }
+
+  .bellButton {
+    width: 100%;
+    border-radius: 999px;
+  }
+
+  .notificationsPanel {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  .panelHeader {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .markReadButton {
+    width: 100%;
   }
 }

@@ -184,6 +184,42 @@ class BoardController {
     return res.json(updated);
   }
 
+  async removeCollaborator(req, res) {
+    const boardId = Number(req.params.id);
+    const userId = Number(req.params.userId);
+
+    const canManage = await Board.canManage(boardId, req.user);
+    if (!canManage) {
+      return res.status(403).json({ message: 'Только владелец или администратор может управлять доступом' });
+    }
+
+    const board = await Board.findDetailedById(boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Доска не найдена' });
+    }
+
+    const collaborator = board.collaborators.find((member) => Number(member.id) === userId);
+    if (!collaborator) {
+      return res.status(404).json({ message: 'Участник не найден в списке доступа' });
+    }
+
+    const updated = await Board.removeCollaborator(boardId, userId);
+
+    await Board.createEvent({
+      boardId,
+      actorId: req.user.id,
+      action: 'access_removed',
+      boardTitle: updated.title,
+      metadata: {
+        removedUserId: collaborator.id,
+        removedUserName: collaborator.name,
+        removedUserEmail: collaborator.email,
+      },
+    });
+
+    return res.json(updated);
+  }
+
   async getActivity(req, res) {
     const activity = await Board.getRecentActivity(req.user);
     return res.json(activity);

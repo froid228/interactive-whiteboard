@@ -1,8 +1,8 @@
 .hero,
 .home {
-  max-width: 1240px;
+  width: min(1280px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 36px 18px 54px;
+  padding: 36px 0 54px;
 }
 
 .home {
@@ -173,6 +173,9 @@
 }
 
 .statusCard {
+  display: grid;
+  gap: 8px;
+  align-content: start;
   min-width: 200px;
   padding: 22px;
   border-radius: 26px;
@@ -182,9 +185,34 @@
   animation: cardRise 0.75s ease 0.1s both;
 }
 
+.toplineLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  min-height: 38px;
+  padding: 0 14px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(100, 78, 86, 0.12);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 24px rgba(47, 36, 51, 0.08);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+
+.toplineLink:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(47, 36, 51, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
 .statusLabel {
   color: var(--text-soft);
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 
 .statusCard strong {
@@ -201,8 +229,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
   grid-template-areas:
-    'form link'
-    'search link';
+    'form form'
+    'search search';
   gap: 16px;
   margin-bottom: 18px;
   align-items: stretch;
@@ -260,24 +288,21 @@
   cursor: not-allowed;
 }
 
-.inlineLink {
-  grid-area: link;
-  width: fit-content;
-  align-self: stretch;
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(100, 78, 86, 0.12);
-  color: var(--text);
-  background: rgba(255, 249, 243, 0.88);
-  box-shadow: 0 10px 24px rgba(47, 36, 51, 0.08);
-}
-
 .searchInput {
   grid-area: search;
   min-width: 0;
   width: 100%;
+}
+
+.formMeta {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px 0 14px;
+}
+
+.counter {
+  color: var(--text-soft);
+  font-size: 0.82rem;
 }
 
 .info,
@@ -305,93 +330,6 @@
   gap: 18px;
 }
 
-.overview {
-  display: grid;
-  gap: 18px;
-  margin-bottom: 22px;
-}
-
-.activityPanel {
-  padding: 24px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top right, rgba(214, 161, 93, 0.14), transparent 24%),
-    rgba(255, 249, 243, 0.88);
-  border: 1px solid rgba(100, 78, 86, 0.14);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-}
-
-.activityHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: start;
-  margin-bottom: 16px;
-}
-
-.activityKicker {
-  margin: 0 0 6px;
-  color: #9b5b47;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.activityTitle {
-  margin: 0;
-  font-size: 1.3rem;
-}
-
-.refreshButton {
-  border: 1px solid rgba(100, 78, 86, 0.12);
-  border-radius: 999px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--text);
-  font-weight: 700;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
-}
-
-.refreshButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(47, 36, 51, 0.08);
-}
-
-.refreshButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.activityList {
-  display: grid;
-  gap: 12px;
-}
-
-.activityItem {
-  display: grid;
-  gap: 6px;
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(100, 78, 86, 0.1);
-}
-
-.activityText,
-.activityEmpty {
-  margin: 0;
-}
-
-.activityTime {
-  color: var(--text-soft);
-  font-size: 0.88rem;
-}
-
-.activityEmpty {
-  color: var(--text-soft);
-}
-
-.activitySkeleton,
 .skeletonPreview,
 .skeletonLine {
   position: relative;
@@ -399,7 +337,6 @@
   background: rgba(100, 78, 86, 0.08);
 }
 
-.activitySkeleton::after,
 .skeletonPreview::after,
 .skeletonLine::after {
   content: '';
@@ -408,11 +345,6 @@
   transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   animation: skeletonShimmer 1.35s ease-in-out infinite;
-}
-
-.activitySkeleton {
-  min-height: 72px;
-  border-radius: 20px;
 }
 
 .skeletonCard {
@@ -566,6 +498,12 @@
 }
 
 @media (max-width: 900px) {
+  .hero,
+  .home {
+    width: min(100%, calc(100% - 24px));
+    padding: 28px 0 40px;
+  }
+
   .topline {
     grid-template-columns: 1fr;
   }
@@ -598,9 +536,6 @@
     text-align: center;
   }
 
-  .activityHeader {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {
@@ -623,6 +558,10 @@
   .kicker {
     font-size: 0.72rem;
     letter-spacing: 0.1em;
+  }
+
+  .statusCard {
+    padding: 78px 20px 20px;
   }
 
   .form {

@@ -157,6 +157,22 @@
   margin-top: 8px;
 }
 
+.memberRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.memberAction {
+  border: 1px solid rgba(141, 47, 47, 0.16);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(141, 47, 47, 0.08);
+  color: #8d2f2f;
+  font-weight: 700;
+}
+
 .shareInput {
   width: 100%;
   max-width: 100%;
@@ -199,6 +215,20 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
+}
+
+.selectionActions {
+  display: grid;
+  gap: 10px;
+}
+
+.removeButton {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #b24f38, #7f3f58);
+  color: #fffaf6;
+  font-weight: 700;
 }
 
 .shareButton:disabled {
@@ -262,10 +292,12 @@
 
 .canvasStage {
   position: relative;
+  isolation: isolate;
 }
 
 .textEditor {
   position: absolute;
+  z-index: 3;
   width: min(240px, calc(100% - 24px));
   min-width: min(220px, calc(100% - 24px));
   max-width: calc(100% - 24px);
@@ -276,6 +308,7 @@
   background: rgba(255, 250, 246, 0.96);
   color: var(--text);
   resize: none;
+  overflow: hidden;
   box-shadow: 0 18px 34px rgba(47, 36, 51, 0.16);
   font: 600 16px/1.45 Georgia, "Times New Roman", serif;
 }
@@ -296,6 +329,10 @@
 
 .canvasViewport {
   overflow: auto;
+}
+
+.canvasPanning {
+  cursor: grabbing;
 }
 
 .canvasScale {
@@ -459,5 +496,10 @@
     width: 100%;
     justify-content: center;
     box-sizing: border-box;
+  }
+
+  .memberRow {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

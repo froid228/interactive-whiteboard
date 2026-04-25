@@ -156,6 +156,16 @@ class Board {
     return this.findDetailedById(boardId);
   }
 
+  static async removeCollaborator(boardId, userId) {
+    await pool.query(
+      `DELETE FROM board_members
+       WHERE board_id = $1 AND user_id = $2`,
+      [boardId, userId]
+    );
+
+    return this.findDetailedById(boardId);
+  }
+
   static async createEvent({ boardId = null, actorId, action, boardTitle, metadata = {} }) {
     const { rows } = await pool.query(
       `INSERT INTO board_events (board_id, actor_id, action, board_title, metadata)

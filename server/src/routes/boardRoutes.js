@@ -56,6 +56,14 @@ router.post('/:id/share', async (req, res, next) => {
   }
 });
 
+router.delete('/:id/share/:userId', async (req, res, next) => {
+  try {
+    await boardController.removeCollaborator(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/:id', async (req, res, next) => {
   try {
     await boardController.delete(req, res);

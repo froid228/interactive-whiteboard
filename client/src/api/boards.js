@@ -70,6 +70,10 @@ export const boardsAPI = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+  removeCollaborator: (id, userId) =>
+    request(`/boards/${id}/share/${userId}`, {
+      method: 'DELETE',
+    }),
 };
 
 export { API_URL, getAuthToken };
