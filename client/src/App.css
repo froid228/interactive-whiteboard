@@ -32,3 +32,29 @@
   pointer-events: none;
   mix-blend-mode: soft-light;
 }
+
+@media (max-width: 640px) {
+  .AppShell {
+    background: linear-gradient(180deg, #faf3ec 0%, #efe1d4 100%);
+  }
+
+  .AppShell::before {
+    background-size: 24px 24px;
+    mask-image: none;
+  }
+
+  .AppShell::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

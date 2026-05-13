@@ -549,19 +549,20 @@
 @media (max-width: 640px) {
   .hero,
   .home {
-    width: min(100%, calc(100% - 24px));
-    padding: 24px 0 40px;
+    width: min(100%, calc(100% - 20px));
+    padding: 18px 0 32px;
   }
 
   .heroContent,
   .statusCard,
   .emptyState {
-    padding: 22px 18px;
+    padding: 18px 16px;
+    border-radius: 20px;
   }
 
   .homeTitle {
-    font-size: clamp(2rem, 13vw, 3.1rem);
-    line-height: 0.98;
+    font-size: clamp(1.8rem, 11vw, 2.8rem);
+    line-height: 1;
   }
 
   .kicker {
@@ -595,5 +596,35 @@
     width: 100%;
     justify-content: center;
     text-align: center;
+    min-height: 46px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .topline {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .commandBar {
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroContent,
+  .heroStat,
+  .statusCard,
+  .grid > *,
+  .emptyIllustration,
+  .primaryLink,
+  .secondaryLink,
+  .inlineLink,
+  .button {
+    animation: none;
+    transition: none;
   }
 }

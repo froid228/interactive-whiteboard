@@ -471,59 +471,96 @@
 }
 
 @media (max-width: 760px) {
-  .boardHeader {
-    grid-template-columns: 1fr;
-    padding: 22px 20px;
+  .board {
+    padding: 16px 12px 28px;
   }
 
-  .actions,
+  .boardHeader {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .canvasMeta {
     flex-direction: column;
+    gap: 8px;
+    font-size: 0.78rem;
   }
 
   .canvasMeta span {
     width: 100%;
     box-sizing: border-box;
+    padding: 7px 10px;
   }
 
   .shareButton {
     width: 100%;
   }
 
+  .clearButton,
+  .secondaryAction,
+  .chatLink,
+  .shareButton {
+    padding: 11px 12px;
+    border-radius: 12px;
+    min-height: 42px;
+  }
+
+  .zoomControls {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
 }
 
 @media (max-width: 560px) {
   .board {
-    padding: 18px 14px 30px;
+    padding: 12px 10px 24px;
   }
 
   .boardTitle {
-    font-size: 1.6rem;
+    font-size: clamp(1.3rem, 8vw, 1.6rem);
+    line-height: 1.1;
+  }
+
+  .boardMeta,
+  .backLink {
+    font-size: 0.86rem;
   }
 
   .boardHeader,
   .panel,
   .canvasWrap {
-    border-radius: 22px;
+    border-radius: 18px;
   }
 
   .boardHeader,
   .panel {
-    padding: 18px;
+    padding: 16px;
   }
 
   .canvasWrap {
-    padding: 12px;
-    min-height: 62vh;
+    padding: 10px;
+    min-height: 0;
   }
 
   .canvasViewport {
-    min-height: 420px;
-    height: 58vh;
+    min-height: 360px;
+    height: min(62vh, 560px);
+    border-radius: 16px;
   }
 
   .canvas {
-    min-height: 58vh;
+    min-height: 360px;
+    border-radius: 16px;
   }
 
   .actions > * {
@@ -541,5 +578,49 @@
   .memberRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .boardDetails {
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .descriptionInput {
+    min-height: 92px;
+  }
+}
+
+@media (max-width: 420px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .canvasMeta span:nth-child(2),
+  .canvasMeta span:nth-child(3) {
+    display: none;
+  }
+
+  .canvasViewport {
+    min-height: 320px;
+    height: 58vh;
+  }
+
+  .canvas {
+    min-height: 320px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boardHeader,
+  .sidebar,
+  .canvasWrap,
+  .grid > *,
+  .panel,
+  .clearButton,
+  .secondaryAction,
+  .chatLink,
+  .shareButton {
+    animation: none;
+    transition: none;
   }
 }

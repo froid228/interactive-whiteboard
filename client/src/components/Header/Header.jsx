@@ -70,6 +70,7 @@ function Header() {
   const [activity, setActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
   const storageKey = useMemo(
     () => (user?.id ? `whiteboard:lastSeenActivity:${user.id}` : 'whiteboard:lastSeenActivity:guest'),
@@ -183,13 +184,41 @@ function Header() {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [isPanelOpen]);
 
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY;
+        const scrolledDown = currentScrollY > lastScrollY;
+        const movedEnough = Math.abs(currentScrollY - lastScrollY) > 8;
+
+        if (movedEnough) {
+          setIsHeaderHidden(scrolledDown && currentScrollY > 92 && !isPanelOpen);
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isPanelOpen]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/');
   };
 
   return (
-    <header className={classes.header}>
+    <header className={`${classes.header} ${isHeaderHidden ? classes.headerHidden : ''}`}>
       <Link to="/" className={classes.logo}>
         <span className={classes.eyebrow}>Realtime collaboration</span>
         <h1 className={classes.title}>Interactive Whiteboard</h1>

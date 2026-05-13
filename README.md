@@ -129,6 +129,55 @@ REACT_APP_SOCKET_URL=http://localhost:5001
 - `DELETE /api/boards/:id`
 - `POST /api/boards/:id/share`
 
+### Документация API
+
+- OpenAPI JSON: `http://localhost:5001/api/schema`
+- Swagger UI: `http://localhost:5001/api/docs`
+
+Swagger UI позволяет просматривать REST endpoints, схему авторизации Bearer JWT и структуру запросов. Для защищенных маршрутов нужно получить токен через `POST /api/auth/login` и указать его в формате `Bearer <token>`.
+
+## Тестирование
+
+### Backend
+
+```bash
+cd server
+npm test
+```
+
+Проверяются:
+
+- валидация email, пароля, имени пользователя, названия доски и сообщений;
+- доступность OpenAPI-схемы и Swagger UI;
+- инициализация схемы БД и seed-пользователей;
+- регистрация, вход и получение текущего профиля;
+- создание доски и выдача доступа;
+- запрет доступа к чужой доске;
+- чат доски для участника с доступом;
+- запрет пользовательского доступа к админским маршрутам;
+- обновление настроек только администратором.
+
+Если PostgreSQL недоступен, интеграционные тесты аккуратно пропускают проверки, которым нужна база данных.
+
+### Backend coverage
+
+```bash
+cd server
+npm run test:coverage
+```
+
+Команда использует встроенное покрытие Node.js test runner и выводит отчет по покрытию backend-файлов.
+
+### Frontend
+
+```bash
+cd client
+npm test -- --watchAll=false
+npm run build
+```
+
+Проверяются Redux-редьюсеры, сохранение авторизованного пользователя и production-сборка React-приложения.
+
 ## Проверка realtime
 
 1. Войти под `alice@whiteboard.local`.
