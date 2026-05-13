@@ -13,12 +13,14 @@ const TEXT_SIZE = 26;
 const TEXT_INPUT_WIDTH = 220;
 const SHAPE_TOOLS = ['rectangle', 'circle', 'line', 'arrow'];
 
-function drawSnapshot(context, snapshot) {
+function drawSnapshot(context, snapshot, zoom = 1) {
   if (!context || !context.canvas) {
     return;
   }
 
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  context.save();
+  context.scale(zoom, zoom);
 
   snapshot.forEach((segment) => {
     if (!segment) {
@@ -112,16 +114,18 @@ function drawSnapshot(context, snapshot) {
 
     context.stroke();
   });
+
+  context.restore();
 }
 
-function getCoordinates(event, canvas) {
+function getCoordinates(event, canvas, zoom = 1) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
   const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
 
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    x: ((event.clientX - rect.left) * scaleX) / zoom,
+    y: ((event.clientY - rect.top) * scaleY) / zoom,
   };
 }
 
@@ -263,9 +267,21 @@ function Board() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
   const boardViewStorageKey = `whiteboard:view:${id}`;
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+    const context = canvasRef.current?.getContext('2d');
+    if (context) {
+      const visibleSnapshot = remoteSegmentRef.current
+        ? [...snapshotRef.current, remoteSegmentRef.current]
+        : snapshotRef.current;
+      drawSnapshot(context, visibleSnapshot, zoom);
+    }
+  }, [zoom]);
 
   const syncHistoryControls = useCallback(() => {
     setCanUndo(historyIndexRef.current > 0);
@@ -291,7 +307,7 @@ function Board() {
   const drawCurrentSnapshot = useCallback((snapshot) => {
     snapshotRef.current = cloneSnapshot(snapshot);
     remoteSegmentRef.current = null;
-    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current);
+    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current, zoomRef.current);
   }, []);
 
   const applySnapshot = useCallback((nextSnapshot, { sync = true, record = true } = {}) => {
@@ -448,9 +464,9 @@ function Board() {
       canvas.width = nextWidth;
       canvas.height = nextHeight;
       const context = canvas.getContext('2d');
-      drawSnapshot(context, snapshotRef.current);
+      drawSnapshot(context, snapshotRef.current, zoomRef.current);
       if (remoteSegmentRef.current) {
-        drawSnapshot(context, [...snapshotRef.current, remoteSegmentRef.current]);
+        drawSnapshot(context, [...snapshotRef.current, remoteSegmentRef.current], zoomRef.current);
       }
     };
 
@@ -600,7 +616,7 @@ function Board() {
       }
 
       remoteSegmentRef.current = segment;
-      drawSnapshot(canvasRef.current?.getContext('2d'), [...snapshotRef.current, segment]);
+      drawSnapshot(canvasRef.current?.getContext('2d'), [...snapshotRef.current, segment], zoomRef.current);
     });
 
     socket.on('board-snapshot', ({ snapshot }) => {
@@ -630,13 +646,13 @@ function Board() {
     }
 
     if (currentTool === 'select') {
-      const point = getCoordinates(event, canvas);
+      const point = getCoordinates(event, canvas, zoomRef.current);
       const hitIndex = findSegmentIndexAtPoint(snapshotRef.current, point);
       setSelectedIndex(hitIndex >= 0 ? hitIndex : null);
       return;
     }
 
-    const point = getCoordinates(event, canvas);
+    const point = getCoordinates(event, canvas, zoomRef.current);
 
     if (currentTool === 'text') {
       const hitIndex = findSegmentIndexAtPoint(snapshotRef.current, point);
@@ -717,27 +733,13 @@ function Board() {
     setPanStart(null);
   };
 
-  const handleViewportWheel = (event) => {
-    if (!(event.ctrlKey || event.metaKey)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    setZoom((current) => {
-      const nextZoom = event.deltaY < 0 ? current + 0.1 : current - 0.1;
-      return Math.min(2, Math.max(0.5, Number(nextZoom.toFixed(2))));
-    });
-  };
-
   const handlePointerMove = (event) => {
     if (!drawing || !currentSegmentRef.current) {
       return;
     }
 
     const canvas = canvasRef.current;
-    const point = getCoordinates(event, canvas);
+    const point = getCoordinates(event, canvas, zoomRef.current);
 
     if (currentSegmentRef.current.type === 'shape') {
       currentSegmentRef.current = {
@@ -745,7 +747,7 @@ function Board() {
         end: point,
       };
 
-      drawSnapshot(canvas.getContext('2d'), [...snapshotRef.current, currentSegmentRef.current]);
+      drawSnapshot(canvas.getContext('2d'), [...snapshotRef.current, currentSegmentRef.current], zoomRef.current);
       return;
     }
 
@@ -755,7 +757,7 @@ function Board() {
     };
 
     const previewSnapshot = [...snapshotRef.current, currentSegmentRef.current];
-    drawSnapshot(canvas.getContext('2d'), previewSnapshot);
+    drawSnapshot(canvas.getContext('2d'), previewSnapshot, zoomRef.current);
     socketRef.current?.emit('draw-segment', {
       boardId: id,
       segment: currentSegmentRef.current,
@@ -940,55 +942,47 @@ function Board() {
           <div
             ref={canvasViewportRef}
             className={`${classes.canvasViewport} ${isPanning ? classes.canvasPanning : ''}`}
-            onWheel={handleViewportWheel}
             onPointerDown={handleViewportPointerDown}
             onPointerMove={handleViewportPointerMove}
             onPointerUp={handleViewportPointerUp}
             onPointerLeave={handleViewportPointerUp}
           >
-            <div
-              className={classes.canvasScale}
-              style={{
-                transform: `scale(${zoom})`,
-              }}
-            >
-              <div className={classes.canvasStage}>
-                <canvas
-                  ref={canvasRef}
-                  className={classes.canvas}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={finishStroke}
-                  onPointerLeave={finishStroke}
-                />
-                {textDraft && (
-                  <textarea
-                    ref={textInputRef}
-                    value={textDraft.value}
-                    onChange={(event) =>
-                      setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
+            <div className={classes.canvasStage}>
+              <canvas
+                ref={canvasRef}
+                className={classes.canvas}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={finishStroke}
+                onPointerLeave={finishStroke}
+              />
+              {textDraft && (
+                <textarea
+                  ref={textInputRef}
+                  value={textDraft.value}
+                  onChange={(event) =>
+                    setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
+                  }
+                  onBlur={commitTextDraft}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      cancelTextDraft();
                     }
-                    onBlur={commitTextDraft}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') {
-                        event.preventDefault();
-                        cancelTextDraft();
-                      }
 
-                      if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        commitTextDraft();
-                      }
-                    }}
-                    placeholder="Введите текст..."
-                    className={classes.textEditor}
-                    style={{
-                      left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
-                      top: Math.min(textDraft.y, Math.max((canvasRef.current?.height || 0) - 84, 12)),
-                    }}
-                  />
-                )}
-              </div>
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      commitTextDraft();
+                    }
+                  }}
+                  placeholder="Введите текст..."
+                  className={classes.textEditor}
+                  style={{
+                    left: Math.min(textDraft.x * zoom, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
+                    top: Math.min(textDraft.y * zoom, Math.max((canvasRef.current?.height || 0) - 84, 12)),
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -997,6 +991,10 @@ function Board() {
           <div className={classes.toolbarPanel}>
             <Toolbar onClear={handleClearBoard} />
           </div>
+        </aside>
+      </div>
+
+      <section className={classes.boardDetails}>
           {selectedIndex !== null ? (
             <div className={classes.panel}>
               <h3>Выбранный объект</h3>
@@ -1072,8 +1070,7 @@ function Board() {
               {sharing ? 'Отправляем...' : 'Добавить участника'}
             </button>
           </form>
-        </aside>
-      </div>
+      </section>
     </section>
   );
 }
