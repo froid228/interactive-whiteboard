@@ -408,15 +408,17 @@
   animation: fadeSlideUp 1s ease 0.2s both;
   width: 100%;
   max-width: 100%;
+  text-align: center;
 }
 
 .demo p {
   color: #cbd5e1;
-  margin-top: 0;
+  margin: 0 0 12px;
 }
 
 .demoButtons {
   display: flex;
+  justify-content: center;
   gap: 10px;
   margin: 12px 0;
 }
@@ -429,6 +431,7 @@
   display: block;
   margin-top: 8px;
   color: #f0d7c7;
+  text-align: center;
 }
 
 .backLink {

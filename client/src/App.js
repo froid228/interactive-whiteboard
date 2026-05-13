@@ -28,7 +28,14 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute requiredRights={['can_manage_users']}>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin"
             element={

@@ -117,8 +117,9 @@
 
 .workspace {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 18px;
+  align-items: start;
 }
 
 .sidebar {
@@ -126,6 +127,12 @@
   gap: 18px;
   align-content: start;
   animation: boardSectionEnter 0.72s ease 0.06s both;
+}
+
+.toolbarPanel {
+  position: sticky;
+  top: 104px;
+  z-index: 2;
 }
 
 .panel {
@@ -329,6 +336,8 @@
 
 .canvasViewport {
   overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .canvasPanning {
@@ -432,6 +441,18 @@
 @media (max-width: 1040px) {
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: 2;
+  }
+
+  .canvasWrap {
+    order: 1;
+  }
+
+  .toolbarPanel {
+    position: static;
   }
 }
 

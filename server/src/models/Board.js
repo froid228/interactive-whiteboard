@@ -205,6 +205,15 @@ class Board {
 
     return rows;
   }
+
+  static async clearActivity(user) {
+    if (user.role !== 'admin') {
+      return 0;
+    }
+
+    const { rowCount } = await pool.query('DELETE FROM board_events');
+    return rowCount;
+  }
 }
 
 module.exports = Board;

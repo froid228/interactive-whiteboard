@@ -111,6 +111,17 @@ function Header() {
     setActivity((current) => [...current]);
   }, [activity, storageKey]);
 
+  const clearNotifications = async () => {
+    try {
+      await boardsAPI.clearActivity();
+      setActivity([]);
+      localStorage.removeItem(storageKey);
+      notify('Уведомления очищены', 'success');
+    } catch (error) {
+      notify(error.message, 'danger');
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       setActivity([]);
@@ -188,7 +199,7 @@ function Header() {
         <Link to="/about" className={classes.navLink}>
           О проекте
         </Link>
-        {isAuthenticated && (
+        {isAuthenticated && user?.role === 'admin' && (
           <Link to="/settings" className={classes.navLink}>
             Настройки
           </Link>
@@ -241,14 +252,26 @@ function Header() {
                       <strong>Уведомления</strong>
                       <span>{pluralizeEvents(activity.length)}</span>
                     </div>
-                    <button
-                      type="button"
-                      className={classes.markReadButton}
-                      onClick={markAllAsRead}
-                      disabled={activity.length === 0}
-                    >
-                      Прочитано
-                    </button>
+                    <div className={classes.panelActions}>
+                      <button
+                        type="button"
+                        className={classes.markReadButton}
+                        onClick={markAllAsRead}
+                        disabled={activity.length === 0}
+                      >
+                        Прочитано
+                      </button>
+                      {user?.role === 'admin' ? (
+                        <button
+                          type="button"
+                          className={classes.clearNotificationsButton}
+                          onClick={clearNotifications}
+                          disabled={activity.length === 0}
+                        >
+                          Очистить
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className={classes.panelList}>

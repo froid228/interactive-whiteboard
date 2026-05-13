@@ -6,6 +6,25 @@ import { boardsAPI } from '../../api/boards';
 import { useNotifications } from '../../context/NotificationContext';
 import classes from './Home.module.css';
 
+function formatBoardsCount(count) {
+  const abs = Math.abs(count) % 100;
+  const lastDigit = abs % 10;
+
+  if (abs > 10 && abs < 20) {
+    return `${count} доступных досок`;
+  }
+
+  if (lastDigit === 1) {
+    return `${count} доступная доска`;
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${count} доступные доски`;
+  }
+
+  return `${count} доступных досок`;
+}
+
 function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -152,7 +171,7 @@ function Home() {
         <div className={classes.statusCard}>
           <span className={classes.statusLabel}>Роль</span>
           <strong>{user?.role === 'admin' ? 'Администратор' : 'Участник'}</strong>
-          <span className={classes.statusNote}>{boards.length} доступных досок</span>
+          <span className={classes.statusNote}>{formatBoardsCount(boards.length)}</span>
         </div>
       </div>
 

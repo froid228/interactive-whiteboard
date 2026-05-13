@@ -32,6 +32,14 @@ router.get('/activity', async (req, res, next) => {
   }
 });
 
+router.delete('/activity', async (req, res, next) => {
+  try {
+    await boardController.clearActivity(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     await boardController.getById(req, res);

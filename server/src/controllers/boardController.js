@@ -217,6 +217,15 @@ class BoardController {
     const activity = await Board.getRecentActivity(req.user);
     return res.json(activity);
   }
+
+  async clearActivity(req, res) {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Очищать уведомления может только администратор' });
+    }
+
+    const deletedCount = await Board.clearActivity(req.user);
+    return res.json({ message: 'Уведомления очищены', deletedCount });
+  }
 }
 
 module.exports = new BoardController();

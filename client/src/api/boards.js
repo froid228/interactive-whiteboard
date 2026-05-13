@@ -42,6 +42,10 @@ export const authAPI = {
 export const boardsAPI = {
   getAll: () => request('/boards'),
   getActivity: () => request('/boards/activity'),
+  clearActivity: () =>
+    request('/boards/activity', {
+      method: 'DELETE',
+    }),
   getById: (id) => request(`/boards/${id}`),
   create: (payload) =>
     request('/boards', {

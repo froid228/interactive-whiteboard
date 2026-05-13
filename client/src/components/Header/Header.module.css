@@ -139,7 +139,16 @@
   margin-top: 4px;
 }
 
-.markReadButton {
+.panelActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: center;
+  justify-content: flex-end;
+}
+
+.markReadButton,
+.clearNotificationsButton {
   align-self: center;
   border: 1px solid rgba(100, 78, 86, 0.14);
   border-radius: 999px;
@@ -150,12 +159,20 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-.markReadButton:hover:not(:disabled) {
+.clearNotificationsButton {
+  background: rgba(141, 47, 47, 0.08);
+  border-color: rgba(141, 47, 47, 0.18);
+  color: #8d2f2f;
+}
+
+.markReadButton:hover:not(:disabled),
+.clearNotificationsButton:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(47, 36, 51, 0.08);
 }
 
-.markReadButton:disabled {
+.markReadButton:disabled,
+.clearNotificationsButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -333,7 +350,9 @@
     display: grid;
   }
 
-  .markReadButton {
+  .panelActions,
+  .markReadButton,
+  .clearNotificationsButton {
     width: 100%;
   }
 }

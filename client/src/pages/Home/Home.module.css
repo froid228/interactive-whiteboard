@@ -177,6 +177,7 @@
   gap: 8px;
   align-content: start;
   min-width: 200px;
+  max-width: 360px;
   padding: 22px;
   border-radius: 26px;
   background: rgba(255, 249, 243, 0.9);
@@ -218,6 +219,7 @@
 .statusCard strong {
   display: block;
   font-size: 1.15rem;
+  overflow-wrap: anywhere;
 }
 
 .statusNote {
@@ -269,16 +271,16 @@
   border: none;
   border-radius: 18px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(135deg, #2f2433, #17121b);
   color: #fffaf6;
   font-weight: 700;
-  box-shadow: 0 18px 34px rgba(142, 79, 103, 0.2);
+  box-shadow: 0 18px 34px rgba(23, 18, 27, 0.24);
   transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
   white-space: nowrap;
 }
 
 .button:hover {
-  box-shadow: 0 22px 40px rgba(142, 79, 103, 0.24);
+  box-shadow: 0 22px 40px rgba(23, 18, 27, 0.3);
 }
 
 .button:disabled {
@@ -506,6 +508,12 @@
 
   .topline {
     grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .statusCard {
+    width: 100%;
+    max-width: none;
   }
 
   .commandBar {
@@ -541,13 +549,14 @@
 @media (max-width: 640px) {
   .hero,
   .home {
-    padding: 24px 14px 40px;
+    width: min(100%, calc(100% - 24px));
+    padding: 24px 0 40px;
   }
 
   .heroContent,
   .statusCard,
   .emptyState {
-    padding: 24px 20px;
+    padding: 22px 18px;
   }
 
   .homeTitle {
@@ -561,7 +570,17 @@
   }
 
   .statusCard {
-    padding: 78px 20px 20px;
+    border-radius: 20px;
+    gap: 6px;
+  }
+
+  .statusCard strong {
+    font-size: clamp(1.15rem, 7vw, 1.7rem);
+    line-height: 1.1;
+  }
+
+  .statusNote {
+    margin-top: 4px;
   }
 
   .form {

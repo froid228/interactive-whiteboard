@@ -502,6 +502,30 @@ function Board() {
   }, [boardViewStorageKey, zoom]);
 
   useEffect(() => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport) {
+      return undefined;
+    }
+
+    const handleWheel = (event) => {
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      setZoom((current) => {
+        const nextZoom = event.deltaY < 0 ? current + 0.1 : current - 0.1;
+        return Math.min(2, Math.max(0.5, Number(nextZoom.toFixed(2))));
+      });
+    };
+
+    viewport.addEventListener('wheel', handleWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  useEffect(() => {
     if (!board) {
       return undefined;
     }
@@ -699,6 +723,7 @@ function Board() {
     }
 
     event.preventDefault();
+    event.stopPropagation();
 
     setZoom((current) => {
       const nextZoom = event.deltaY < 0 ? current + 0.1 : current - 0.1;
@@ -905,9 +930,73 @@ function Board() {
       {error && <p className={classes.error}>{error}</p>}
 
       <div className={classes.workspace}>
-        <aside className={classes.sidebar}>
-          <Toolbar onClear={handleClearBoard} />
+        <div className={classes.canvasWrap}>
+          <div className={classes.canvasMeta}>
+            <span>Инструмент: {getToolLabel(currentTool)}</span>
+            <span>Цвет: {currentTool === 'eraser' ? 'ластик' : color}</span>
+            <span>Толщина: {currentTool === 'eraser' ? `${ERASER_WIDTH}px` : `${brushSize}px`}</span>
+            <span>Навигация: Ctrl/Cmd + колесо для зума</span>
+          </div>
+          <div
+            ref={canvasViewportRef}
+            className={`${classes.canvasViewport} ${isPanning ? classes.canvasPanning : ''}`}
+            onWheel={handleViewportWheel}
+            onPointerDown={handleViewportPointerDown}
+            onPointerMove={handleViewportPointerMove}
+            onPointerUp={handleViewportPointerUp}
+            onPointerLeave={handleViewportPointerUp}
+          >
+            <div
+              className={classes.canvasScale}
+              style={{
+                transform: `scale(${zoom})`,
+              }}
+            >
+              <div className={classes.canvasStage}>
+                <canvas
+                  ref={canvasRef}
+                  className={classes.canvas}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={finishStroke}
+                  onPointerLeave={finishStroke}
+                />
+                {textDraft && (
+                  <textarea
+                    ref={textInputRef}
+                    value={textDraft.value}
+                    onChange={(event) =>
+                      setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
+                    }
+                    onBlur={commitTextDraft}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelTextDraft();
+                      }
 
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        commitTextDraft();
+                      }
+                    }}
+                    placeholder="Введите текст..."
+                    className={classes.textEditor}
+                    style={{
+                      left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
+                      top: Math.min(textDraft.y, Math.max((canvasRef.current?.height || 0) - 84, 12)),
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className={classes.sidebar}>
+          <div className={classes.toolbarPanel}>
+            <Toolbar onClear={handleClearBoard} />
+          </div>
           {selectedIndex !== null ? (
             <div className={classes.panel}>
               <h3>Выбранный объект</h3>
@@ -984,69 +1073,6 @@ function Board() {
             </button>
           </form>
         </aside>
-
-        <div className={classes.canvasWrap}>
-          <div className={classes.canvasMeta}>
-            <span>Инструмент: {getToolLabel(currentTool)}</span>
-            <span>Цвет: {currentTool === 'eraser' ? 'ластик' : color}</span>
-            <span>Толщина: {currentTool === 'eraser' ? `${ERASER_WIDTH}px` : `${brushSize}px`}</span>
-            <span>Навигация: Ctrl/Cmd + колесо для зума</span>
-          </div>
-          <div
-            ref={canvasViewportRef}
-            className={`${classes.canvasViewport} ${isPanning ? classes.canvasPanning : ''}`}
-            onWheel={handleViewportWheel}
-            onPointerDown={handleViewportPointerDown}
-            onPointerMove={handleViewportPointerMove}
-            onPointerUp={handleViewportPointerUp}
-            onPointerLeave={handleViewportPointerUp}
-          >
-            <div
-              className={classes.canvasScale}
-              style={{
-                transform: `scale(${zoom})`,
-              }}
-            >
-              <div className={classes.canvasStage}>
-                <canvas
-                  ref={canvasRef}
-                  className={classes.canvas}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={finishStroke}
-                  onPointerLeave={finishStroke}
-                />
-                {textDraft && (
-                  <textarea
-                    ref={textInputRef}
-                    value={textDraft.value}
-                    onChange={(event) =>
-                      setTextDraft((current) => (current ? { ...current, value: event.target.value } : current))
-                    }
-                    onBlur={commitTextDraft}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') {
-                        event.preventDefault();
-                        cancelTextDraft();
-                      }
-
-                      if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        commitTextDraft();
-                      }
-                    }}
-                    placeholder="Введите текст..."
-                    className={classes.textEditor}
-                    style={{
-                      left: Math.min(textDraft.x, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
-                      top: Math.min(textDraft.y, Math.max((canvasRef.current?.height || 0) - 84, 12)),
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

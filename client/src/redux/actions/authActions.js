@@ -43,7 +43,10 @@ export const login = (email, password) => async (dispatch) => {
   dispatch(loginRequest());
 
   try {
-    const payload = await authAPI.login({ email, password });
+    const payload = await authAPI.login({
+      email: String(email).trim().toLowerCase(),
+      password,
+    });
     persistSession(payload);
     dispatch(loginSuccess(payload));
     return { success: true };
@@ -57,7 +60,11 @@ export const register = (name, email, password) => async (dispatch) => {
   dispatch(loginRequest());
 
   try {
-    const payload = await authAPI.register({ name, email, password });
+    const payload = await authAPI.register({
+      name: String(name).trim(),
+      email: String(email).trim().toLowerCase(),
+      password,
+    });
     persistSession(payload);
     dispatch(loginSuccess(payload));
     return { success: true };
