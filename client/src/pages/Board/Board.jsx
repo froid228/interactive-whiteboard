@@ -13,7 +13,7 @@ const TEXT_SIZE = 26;
 const TEXT_INPUT_WIDTH = 220;
 const SHAPE_TOOLS = ['rectangle', 'circle', 'line', 'arrow'];
 
-function drawSnapshot(context, snapshot, zoom = 1) {
+function drawSnapshot(context, snapshot, zoom = 1, pan = { x: 0, y: 0 }) {
   if (!context || !context.canvas) {
     return;
   }
@@ -21,6 +21,7 @@ function drawSnapshot(context, snapshot, zoom = 1) {
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
   context.save();
+  context.translate(pan.x || 0, pan.y || 0);
   context.scale(zoom, zoom);
 
   snapshot.forEach((segment) => {
@@ -119,14 +120,17 @@ function drawSnapshot(context, snapshot, zoom = 1) {
   context.restore();
 }
 
-function getCoordinates(event, canvas, zoom = 1) {
+function getCoordinates(event, canvas, zoom = 1, pan = { x: 0, y: 0 }) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
   const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
 
+  const canvasX = (event.clientX - rect.left) * scaleX;
+  const canvasY = (event.clientY - rect.top) * scaleY;
+
   return {
-    x: ((event.clientX - rect.left) * scaleX) / zoom,
-    y: ((event.clientY - rect.top) * scaleY) / zoom,
+    x: (canvasX - (pan.x || 0)) / zoom,
+    y: (canvasY - (pan.y || 0)) / zoom,
   };
 }
 
@@ -269,11 +273,14 @@ function Board() {
   const [canRedo, setCanRedo] = useState(false);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(1);
+  const panRef = useRef({ x: 0, y: 0 });
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
+  const panningRef = useRef(null);
   const boardViewStorageKey = `whiteboard:view:${id}`;
 
-  const redrawCanvas = useCallback((nextZoom = zoomRef.current) => {
+  const redrawCanvas = useCallback((nextZoom = zoomRef.current, nextPan = panRef.current) => {
     const context = canvasRef.current?.getContext('2d');
     if (!context) {
       return;
@@ -283,13 +290,45 @@ function Board() {
       ? [...snapshotRef.current, remoteSegmentRef.current]
       : snapshotRef.current;
 
-    drawSnapshot(context, visibleSnapshot, nextZoom);
+    drawSnapshot(context, visibleSnapshot, nextZoom, nextPan);
   }, []);
 
   useEffect(() => {
     zoomRef.current = zoom;
-    redrawCanvas(zoom);
+    redrawCanvas(zoom, panRef.current);
   }, [redrawCanvas, zoom]);
+
+  useEffect(() => {
+    panRef.current = pan;
+    redrawCanvas(zoomRef.current, pan);
+  }, [pan, redrawCanvas]);
+
+  const applyZoom = useCallback((nextZoom, originEvent = null) => {
+    const normalizedZoom = Math.min(2, Math.max(0.5, Number(nextZoom.toFixed(2))));
+    const currentZoom = zoomRef.current || 1;
+    let nextPan = panRef.current;
+
+    if (originEvent && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const scaleX = rect.width > 0 ? canvasRef.current.width / rect.width : 1;
+      const scaleY = rect.height > 0 ? canvasRef.current.height / rect.height : 1;
+      const canvasX = (originEvent.clientX - rect.left) * scaleX;
+      const canvasY = (originEvent.clientY - rect.top) * scaleY;
+      const boardX = (canvasX - (panRef.current.x || 0)) / currentZoom;
+      const boardY = (canvasY - (panRef.current.y || 0)) / currentZoom;
+
+      nextPan = {
+        x: canvasX - boardX * normalizedZoom,
+        y: canvasY - boardY * normalizedZoom,
+      };
+    }
+
+    zoomRef.current = normalizedZoom;
+    panRef.current = nextPan;
+    setPan(nextPan);
+    setZoom(normalizedZoom);
+    redrawCanvas(normalizedZoom, nextPan);
+  }, [redrawCanvas]);
 
   const syncHistoryControls = useCallback(() => {
     setCanUndo(historyIndexRef.current > 0);
@@ -315,7 +354,7 @@ function Board() {
   const drawCurrentSnapshot = useCallback((snapshot) => {
     snapshotRef.current = cloneSnapshot(snapshot);
     remoteSegmentRef.current = null;
-    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current, zoomRef.current);
+    drawSnapshot(canvasRef.current?.getContext('2d'), snapshotRef.current, zoomRef.current, panRef.current);
   }, []);
 
   const applySnapshot = useCallback((nextSnapshot, { sync = true, record = true } = {}) => {
@@ -419,6 +458,11 @@ function Board() {
             if (typeof parsedView.zoom === 'number') {
               setZoom(Math.min(2, Math.max(0.5, parsedView.zoom)));
             }
+            if (typeof parsedView.panX === 'number' && typeof parsedView.panY === 'number') {
+              const savedPan = { x: parsedView.panX, y: parsedView.panY };
+              panRef.current = savedPan;
+              setPan(savedPan);
+            }
           } catch (storageError) {
             // Ignore corrupted stored view state.
           }
@@ -472,9 +516,9 @@ function Board() {
       canvas.width = nextWidth;
       canvas.height = nextHeight;
       const context = canvas.getContext('2d');
-      drawSnapshot(context, snapshotRef.current, zoomRef.current);
+      drawSnapshot(context, snapshotRef.current, zoomRef.current, panRef.current);
       if (remoteSegmentRef.current) {
-        drawSnapshot(context, [...snapshotRef.current, remoteSegmentRef.current], zoomRef.current);
+        drawSnapshot(context, [...snapshotRef.current, remoteSegmentRef.current], zoomRef.current, panRef.current);
       }
     };
 
@@ -484,46 +528,15 @@ function Board() {
   }, []);
 
   useEffect(() => {
-    const viewport = canvasViewportRef.current;
-    if (!viewport) {
-      return;
-    }
-
-    const savedView = localStorage.getItem(boardViewStorageKey);
-    if (!savedView) {
-      return;
-    }
-
-    try {
-      const parsedView = JSON.parse(savedView);
-      viewport.scrollLeft = parsedView.scrollLeft || 0;
-      viewport.scrollTop = parsedView.scrollTop || 0;
-    } catch (storageError) {
-      // Ignore corrupted stored view state.
-    }
-  }, [boardViewStorageKey, zoom]);
-
-  useEffect(() => {
-    const viewport = canvasViewportRef.current;
-    if (!viewport) {
-      return undefined;
-    }
-
-    const saveView = () => {
-      localStorage.setItem(
-        boardViewStorageKey,
-        JSON.stringify({
-          zoom,
-          scrollLeft: viewport.scrollLeft,
-          scrollTop: viewport.scrollTop,
-        })
-      );
-    };
-
-    saveView();
-    viewport.addEventListener('scroll', saveView, { passive: true });
-    return () => viewport.removeEventListener('scroll', saveView);
-  }, [boardViewStorageKey, zoom]);
+    localStorage.setItem(
+      boardViewStorageKey,
+      JSON.stringify({
+        zoom,
+        panX: pan.x,
+        panY: pan.y,
+      })
+    );
+  }, [boardViewStorageKey, pan.x, pan.y, zoom]);
 
   useEffect(() => {
     const viewport = canvasViewportRef.current;
@@ -539,18 +552,13 @@ function Board() {
       event.preventDefault();
       event.stopPropagation();
 
-      setZoom((current) => {
-        const nextZoom = event.deltaY < 0 ? current + 0.1 : current - 0.1;
-        const normalizedZoom = Math.min(2, Math.max(0.5, Number(nextZoom.toFixed(2))));
-        zoomRef.current = normalizedZoom;
-        redrawCanvas(normalizedZoom);
-        return normalizedZoom;
-      });
+      const nextZoom = event.deltaY < 0 ? zoomRef.current + 0.1 : zoomRef.current - 0.1;
+      applyZoom(nextZoom, event);
     };
 
     viewport.addEventListener('wheel', handleWheel, { passive: false });
     return () => viewport.removeEventListener('wheel', handleWheel);
-  }, [redrawCanvas]);
+  }, [applyZoom]);
 
   useEffect(() => {
     if (!board) {
@@ -627,7 +635,7 @@ function Board() {
       }
 
       remoteSegmentRef.current = segment;
-      drawSnapshot(canvasRef.current?.getContext('2d'), [...snapshotRef.current, segment], zoomRef.current);
+      drawSnapshot(canvasRef.current?.getContext('2d'), [...snapshotRef.current, segment], zoomRef.current, panRef.current);
     });
 
     socket.on('board-snapshot', ({ snapshot }) => {
@@ -657,27 +665,28 @@ function Board() {
     }
 
     if (currentTool === 'select') {
-      const point = getCoordinates(event, canvas, zoomRef.current);
+      const point = getCoordinates(event, canvas, zoomRef.current, panRef.current);
       const hitIndex = findSegmentIndexAtPoint(snapshotRef.current, point);
       setSelectedIndex(hitIndex >= 0 ? hitIndex : null);
 
-      if (hitIndex < 0 && zoomRef.current > 1) {
-        handleViewportPointerDown(event);
+      if (hitIndex >= 0) {
+        event.stopPropagation();
+        return;
+      }
+
+      if (hitIndex < 0) {
+        startPanning(event);
       }
 
       return;
     }
 
-    const point = getCoordinates(event, canvas, zoomRef.current);
+    const point = getCoordinates(event, canvas, zoomRef.current, panRef.current);
 
     if (currentTool === 'text') {
-      const hitIndex = findSegmentIndexAtPoint(snapshotRef.current, point);
-      if (hitIndex >= 0 && snapshotRef.current[hitIndex]?.type === 'text') {
-        setSelectedIndex(hitIndex);
-        openTextEditorForSegment(snapshotRef.current[hitIndex], hitIndex);
-        return;
-      }
-
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedIndex(null);
       setTextDraft({
         x: point.x,
         y: point.y,
@@ -711,8 +720,8 @@ function Board() {
     setDrawing(true);
   };
 
-  const handleViewportPointerDown = (event) => {
-    if (zoom <= 1 || currentTool !== 'select') {
+  const startPanning = (event) => {
+    if (currentTool !== 'select') {
       return;
     }
 
@@ -720,49 +729,61 @@ function Board() {
       return;
     }
 
-    const viewport = canvasViewportRef.current;
-    if (!viewport) {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextPanStart = {
+      x: event.clientX,
+      y: event.clientY,
+      panX: panRef.current.x,
+      panY: panRef.current.y,
+    };
+    panningRef.current = nextPanStart;
+    setIsPanning(true);
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
+    setPanStart(nextPanStart);
+  };
+
+  const handleViewportPointerDown = (event) => {
+    startPanning(event);
+  };
+
+  const handleViewportPointerMove = (event) => {
+    const activePan = panningRef.current || panStart;
+
+    if (!activePan) {
       return;
     }
 
     event.preventDefault();
-    setIsPanning(true);
-    event.currentTarget?.setPointerCapture?.(event.pointerId);
-    setPanStart({
-      x: event.clientX,
-      y: event.clientY,
-      scrollLeft: viewport.scrollLeft,
-      scrollTop: viewport.scrollTop,
-    });
-  };
-
-  const handleViewportPointerMove = (event) => {
-    if (!isPanning || !panStart) {
-      return;
-    }
-
-    const viewport = canvasViewportRef.current;
-    if (!viewport) {
-      return;
-    }
-
-    viewport.scrollLeft = panStart.scrollLeft - (event.clientX - panStart.x);
-    viewport.scrollTop = panStart.scrollTop - (event.clientY - panStart.y);
+    event.stopPropagation();
+    const nextPan = {
+      x: activePan.panX + event.clientX - activePan.x,
+      y: activePan.panY + event.clientY - activePan.y,
+    };
+    panRef.current = nextPan;
+    setPan(nextPan);
+    redrawCanvas(zoomRef.current, nextPan);
   };
 
   const handleViewportPointerUp = (event) => {
     event.currentTarget?.releasePointerCapture?.(event.pointerId);
+    panningRef.current = null;
     setIsPanning(false);
     setPanStart(null);
   };
 
   const handlePointerMove = (event) => {
+    if (panningRef.current) {
+      handleViewportPointerMove(event);
+      return;
+    }
+
     if (!drawing || !currentSegmentRef.current) {
       return;
     }
 
     const canvas = canvasRef.current;
-    const point = getCoordinates(event, canvas, zoomRef.current);
+    const point = getCoordinates(event, canvas, zoomRef.current, panRef.current);
 
     if (currentSegmentRef.current.type === 'shape') {
       currentSegmentRef.current = {
@@ -770,7 +791,7 @@ function Board() {
         end: point,
       };
 
-      drawSnapshot(canvas.getContext('2d'), [...snapshotRef.current, currentSegmentRef.current], zoomRef.current);
+      drawSnapshot(canvas.getContext('2d'), [...snapshotRef.current, currentSegmentRef.current], zoomRef.current, panRef.current);
       return;
     }
 
@@ -780,7 +801,7 @@ function Board() {
     };
 
     const previewSnapshot = [...snapshotRef.current, currentSegmentRef.current];
-    drawSnapshot(canvas.getContext('2d'), previewSnapshot, zoomRef.current);
+    drawSnapshot(canvas.getContext('2d'), previewSnapshot, zoomRef.current, panRef.current);
     socketRef.current?.emit('draw-segment', {
       boardId: id,
       segment: currentSegmentRef.current,
@@ -796,6 +817,15 @@ function Board() {
     applySnapshot(nextSnapshot);
     currentSegmentRef.current = null;
     setDrawing(false);
+  };
+
+  const handleCanvasPointerEnd = (event) => {
+    if (panningRef.current) {
+      handleViewportPointerUp(event);
+      return;
+    }
+
+    finishStroke();
   };
 
   const handleClearBoard = () => {
@@ -864,26 +894,18 @@ function Board() {
   };
 
   const handleZoomOut = () => {
-    setZoom((current) => {
-      const nextZoom = Math.max(0.5, Number((current - 0.1).toFixed(2)));
-      zoomRef.current = nextZoom;
-      redrawCanvas(nextZoom);
-      return nextZoom;
-    });
+    applyZoom(zoomRef.current - 0.1);
   };
 
   const handleZoomIn = () => {
-    setZoom((current) => {
-      const nextZoom = Math.min(2, Number((current + 0.1).toFixed(2)));
-      zoomRef.current = nextZoom;
-      redrawCanvas(nextZoom);
-      return nextZoom;
-    });
+    applyZoom(zoomRef.current + 0.1);
   };
 
   const handleZoomReset = () => {
     zoomRef.current = 1;
-    redrawCanvas(1);
+    panRef.current = { x: 0, y: 0 };
+    redrawCanvas(1, panRef.current);
+    setPan(panRef.current);
     setZoom(1);
   };
 
@@ -988,8 +1010,8 @@ function Board() {
                 className={classes.canvas}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
-                onPointerUp={finishStroke}
-                onPointerLeave={finishStroke}
+                onPointerUp={handleCanvasPointerEnd}
+                onPointerLeave={handleCanvasPointerEnd}
               />
               {textDraft && (
                 <textarea
@@ -1013,8 +1035,20 @@ function Board() {
                   placeholder="Введите текст..."
                   className={classes.textEditor}
                   style={{
-                    left: Math.min(textDraft.x * zoom, Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)),
-                    top: Math.min(textDraft.y * zoom, Math.max((canvasRef.current?.height || 0) - 84, 12)),
+                    left: Math.max(
+                      12,
+                      Math.min(
+                        textDraft.x * zoom + pan.x,
+                        Math.max((canvasRef.current?.width || 0) - TEXT_INPUT_WIDTH, 12)
+                      )
+                    ),
+                    top: Math.max(
+                      12,
+                      Math.min(
+                        textDraft.y * zoom + pan.y,
+                        Math.max((canvasRef.current?.height || 0) - 84, 12)
+                      )
+                    ),
                   }}
                 />
               )}
