@@ -8,6 +8,7 @@ function Toolbar({ onClear }) {
   const { currentTool, color, brushSize } = useSelector((state) => state.toolbar);
 
   const tools = [
+    { id: 'select', icon: '⌖', label: 'Выбор', hint: 'Выбор, удаление и редактирование объектов' },
     { id: 'pencil', icon: '✏️', label: 'Карандаш', hint: 'Рисование тонкой линией' },
     { id: 'eraser', icon: '🧽', label: 'Ластик', hint: 'Стирание фрагментов' },
     { id: 'text', icon: 'T', label: 'Текст', hint: 'Добавление текста по клику на холст' },

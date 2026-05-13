@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Setting = require('../models/Setting');
+const { isValidEmail, validatePassword, validateUserName } = require('../utils/validators');
+const { getJwtSecret } = require('../utils/jwtSecret');
 
 const RIGHTS_BY_ROLE = {
   admin: ['can_view_boards', 'can_edit_boards', 'can_manage_boards', 'can_manage_users'],
@@ -15,7 +18,7 @@ function signToken(user) {
       name: user.name,
       role: user.role,
     },
-    process.env.JWT_SECRET || 'dev-secret',
+    getJwtSecret(),
     { expiresIn: '12h' }
   );
 }
@@ -37,25 +40,25 @@ function toAuthPayload(user) {
 class AuthController {
   async register(req, res) {
     const { name, email, password } = req.body;
+    const settings = await Setting.getAll();
 
-    if (
-      !name ||
-      typeof name !== 'string' ||
-      name.trim().length < 2 ||
-      name.trim().length > 120
-    ) {
+    if (!settings.allowGuestRegistration) {
+      return res.status(403).json({ message: 'Регистрация временно закрыта администратором' });
+    }
+
+    if (!validateUserName(name)) {
       return res.status(400).json({ message: 'Имя должно содержать от 2 до 120 символов' });
     }
 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ message: 'Некорректный email' });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
+    if (!validatePassword(password)) {
       return res.status(400).json({ message: 'Пароль должен содержать минимум 6 символов' });
     }
 
-    const existing = await User.findByEmail(email);
+    const existing = await User.findByEmail(email.trim().toLowerCase());
     if (existing) {
       return res.status(409).json({ message: 'Пользователь с таким email уже существует' });
     }
@@ -63,7 +66,7 @@ class AuthController {
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
       name: name.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       passwordHash,
       role: 'user',
     });
@@ -78,9 +81,13 @@ class AuthController {
       return res.status(400).json({ message: 'Email и пароль обязательны' });
     }
 
-    const user = await User.findByEmail(email);
+    const user = await User.findByEmail(String(email).trim().toLowerCase());
     if (!user) {
       return res.status(401).json({ message: 'Неверный email или пароль' });
+    }
+
+    if (user.is_active === false) {
+      return res.status(403).json({ message: 'Пользователь заблокирован администратором' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);

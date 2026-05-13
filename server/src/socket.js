@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Board = require('./models/Board');
+const Message = require('./models/Message');
+const { validateMessageText } = require('./utils/validators');
+const { getJwtSecret } = require('./utils/jwtSecret');
 
 function roomName(boardId) {
   return `board:${boardId}`;
@@ -13,7 +16,7 @@ function configureSockets(io) {
         return next(new Error('UNAUTHORIZED'));
       }
 
-      const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+      const payload = jwt.verify(token, getJwtSecret());
       socket.user = payload;
       return next();
     } catch (error) {
@@ -69,6 +72,32 @@ function configureSockets(io) {
 
       await Board.updateSnapshot(numericBoardId, []);
       io.to(roomName(numericBoardId)).emit('clear-board');
+    });
+
+    socket.on('send-message', async ({ boardId, text }, callback = () => {}) => {
+      try {
+        const numericBoardId = Number(boardId);
+        if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
+          callback({ ok: false, message: 'Нет доступа к чату этой доски' });
+          return;
+        }
+
+        if (!validateMessageText(text)) {
+          callback({ ok: false, message: 'Сообщение должно содержать от 1 до 1000 символов' });
+          return;
+        }
+
+        const message = await Message.create({
+          boardId: numericBoardId,
+          authorId: socket.user.id,
+          text: text.trim(),
+        });
+
+        io.to(roomName(numericBoardId)).emit('message-created', { message });
+        callback({ ok: true, message });
+      } catch (error) {
+        callback({ ok: false, message: 'Не удалось отправить сообщение' });
+      }
     });
   });
 }

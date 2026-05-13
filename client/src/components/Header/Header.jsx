@@ -193,6 +193,11 @@ function Header() {
             Настройки
           </Link>
         )}
+        {isAuthenticated && user?.role === 'admin' && (
+          <Link to="/admin" className={classes.navLink}>
+            Админка
+          </Link>
+        )}
       </nav>
 
       <div className={classes.user}>

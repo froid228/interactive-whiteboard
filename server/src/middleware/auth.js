@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { getJwtSecret } = require('../utils/jwtSecret');
 
 function getTokenFromRequest(req) {
   const authHeader = req.headers.authorization || '';
@@ -10,7 +12,7 @@ function getTokenFromRequest(req) {
   return authHeader.slice('Bearer '.length).trim();
 }
 
-function authRequired(req, res, next) {
+async function authRequired(req, res, next) {
   const token = getTokenFromRequest(req);
 
   if (!token) {
@@ -18,7 +20,11 @@ function authRequired(req, res, next) {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    req.user = jwt.verify(token, getJwtSecret());
+    const user = await User.findSafeById(req.user.id);
+    if (!user || user.is_active === false) {
+      return res.status(403).json({ message: 'Пользователь заблокирован или удалён' });
+    }
     return next();
   } catch (error) {
     return res.status(401).json({ message: 'Токен недействителен' });

@@ -25,11 +25,43 @@ class User {
 
   static async findSafeById(id) {
     const { rows } = await pool.query(
-      'SELECT id, name, email, role, created_at FROM users WHERE id = $1 LIMIT 1',
+      'SELECT id, name, email, role, is_active, created_at FROM users WHERE id = $1 LIMIT 1',
       [id]
     );
 
     return rows[0] || null;
+  }
+
+  static async findAllSafe() {
+    const { rows } = await pool.query(
+      `
+        SELECT id, name, email, role, is_active, created_at
+        FROM users
+        ORDER BY created_at DESC, id DESC
+      `
+    );
+
+    return rows;
+  }
+
+  static async update(id, { role, isActive }) {
+    const { rows } = await pool.query(
+      `
+        UPDATE users
+        SET role = COALESCE($1, role),
+            is_active = COALESCE($2, is_active)
+        WHERE id = $3
+        RETURNING id, name, email, role, is_active, created_at
+      `,
+      [role ?? null, isActive ?? null, id]
+    );
+
+    return rows[0] || null;
+  }
+
+  static async delete(id) {
+    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    return rowCount > 0;
   }
 }
 

@@ -7,6 +7,7 @@ import About from './pages/About/About';
 import Messages from './pages/Messages/Messages';
 import Login from './pages/Login/Login';
 import Settings from './pages/Settings/Settings';
+import Admin from './pages/Admin/Admin';
 import Header from './components/Header/Header';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import { loadProfile } from './redux/actions/authActions';
@@ -28,6 +29,14 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRights={['can_manage_users']}>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/board/:id"
             element={

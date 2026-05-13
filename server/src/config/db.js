@@ -2,13 +2,20 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+    }
+  : {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+    };
+
+const pool = new Pool(poolConfig);
 
 const DEFAULT_USERS = [
   {
@@ -39,6 +46,7 @@ async function ensureSchema() {
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       role VARCHAR(20) NOT NULL DEFAULT 'user',
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMP NOT NULL DEFAULT NOW(),
       CHECK (role IN ('admin', 'user'))
     );
@@ -50,6 +58,7 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS email VARCHAR(255),
     ADD COLUMN IF NOT EXISTS password_hash TEXT,
     ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user',
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
   `);
 
@@ -63,6 +72,12 @@ async function ensureSchema() {
     UPDATE users
     SET role = 'user'
     WHERE role IS NULL OR role NOT IN ('admin', 'user');
+  `);
+
+  await pool.query(`
+    UPDATE users
+    SET is_active = TRUE
+    WHERE is_active IS NULL;
   `);
 
   await pool.query(`
@@ -155,6 +170,29 @@ async function ensureSchema() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS board_messages (
+      id SERIAL PRIMARY KEY,
+      board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_board_messages_board_created
+    ON board_messages (board_id, created_at DESC);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key VARCHAR(80) PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+  `);
+
   await seedDefaults();
 
   await pool.query(`
@@ -163,6 +201,7 @@ async function ensureSchema() {
     ALTER COLUMN email SET NOT NULL,
     ALTER COLUMN password_hash SET NOT NULL,
     ALTER COLUMN role SET NOT NULL,
+    ALTER COLUMN is_active SET NOT NULL,
     ALTER COLUMN created_at SET NOT NULL;
   `);
 

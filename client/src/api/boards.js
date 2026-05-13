@@ -76,4 +76,35 @@ export const boardsAPI = {
     }),
 };
 
+export const chatAPI = {
+  getMessages: (boardId) => request(`/chat/${boardId}/messages`),
+  sendMessage: (boardId, text) =>
+    request(`/chat/${boardId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+};
+
+export const adminAPI = {
+  getUsers: () => request('/admin/users'),
+  updateUser: (id, payload) =>
+    request(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteUser: (id) =>
+    request(`/admin/users/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+export const settingsAPI = {
+  getSettings: () => request('/settings'),
+  updateSettings: (payload) =>
+    request('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+};
+
 export { API_URL, getAuthToken };

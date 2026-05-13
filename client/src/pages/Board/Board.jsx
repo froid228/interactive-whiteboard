@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
 import { boardsAPI, getAuthToken } from '../../api/boards';
 import { useNotifications } from '../../context/NotificationContext';
 import Toolbar from '../../components/Toolbar/Toolbar';
-import { setTool } from '../../redux/actions/toolbarActions';
 import classes from './Board.module.css';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL ?? 'http://localhost:5001';
 const ERASER_WIDTH = 18;
 const TEXT_SIZE = 26;
 const TEXT_INPUT_WIDTH = 220;
@@ -238,7 +237,6 @@ function findSegmentIndexAtPoint(snapshot, point) {
 
 function Board() {
   const { id } = useParams();
-  const dispatch = useDispatch();
   const { currentTool, color, brushSize } = useSelector((state) => state.toolbar);
   const currentUser = useSelector((state) => state.auth.user);
   const { notify } = useNotifications();
@@ -268,12 +266,6 @@ function Board() {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
   const boardViewStorageKey = `whiteboard:view:${id}`;
-
-  useEffect(() => {
-    if (currentTool === 'select') {
-      dispatch(setTool('pencil'));
-    }
-  }, [currentTool, dispatch]);
 
   const syncHistoryControls = useCallback(() => {
     setCanUndo(historyIndexRef.current > 0);

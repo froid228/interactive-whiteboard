@@ -1,13 +1,6 @@
 const Board = require('../models/Board');
 const User = require('../models/User');
-
-function validateBoardTitle(title) {
-  return typeof title === 'string' && title.trim().length >= 3 && title.trim().length <= 120;
-}
-
-function validateBoardDescription(description) {
-  return description === undefined || (typeof description === 'string' && description.trim().length <= 500);
-}
+const { validateBoardDescription, validateBoardTitle } = require('../utils/validators');
 
 class BoardController {
   async create(req, res) {
