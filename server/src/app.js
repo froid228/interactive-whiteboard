@@ -3,7 +3,16 @@ const cors = require('cors');
 const { rateLimiter, securityHeaders } = require('./middleware/security');
 const openapi = require('./openapi');
 
-const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://localhost:8080'];
+const DEFAULT_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5001',
+  'http://127.0.0.1:5001',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+];
 const allowedOrigins = [
   ...(process.env.CLIENT_ORIGIN ? [process.env.CLIENT_ORIGIN] : []),
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),

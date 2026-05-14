@@ -231,6 +231,9 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
+  background: linear-gradient(135deg, #b85f43, #7f3f58);
+  color: #fffaf6;
+  box-shadow: 0 14px 24px rgba(127, 63, 88, 0.18);
 }
 
 .selectionActions {
@@ -248,10 +251,16 @@
 }
 
 .shareButton:disabled {
-  background: linear-gradient(135deg, #d9c9c0, #c9b8be);
-  color: #816c74;
+  background: linear-gradient(135deg, #a85b49, #724258);
+  color: rgba(255, 250, 246, 0.82);
+  opacity: 0.78;
   box-shadow: none;
   cursor: not-allowed;
+}
+
+.shareButton:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .canvasWrap {
