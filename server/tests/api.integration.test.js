@@ -196,6 +196,28 @@ test('protects boards and allows owner to share access', async () => {
   assert.equal(allowed.data.id, created.data.id);
 });
 
+test('returns 400 for invalid REST resource identifiers', async () => {
+  if (!databaseAvailable || !httpAvailable) {
+    return;
+  }
+
+  const aliceToken = await login('alice@whiteboard.local', 'User123!');
+  const adminToken = await login('admin@whiteboard.local', 'Admin123!');
+
+  const invalidBoard = await api('/api/boards/not-a-number', { token: aliceToken });
+  assert.equal(invalidBoard.status, 400);
+
+  const invalidChat = await api('/api/chat/null/messages', { token: aliceToken });
+  assert.equal(invalidChat.status, 400);
+
+  const invalidAdminUser = await api('/api/admin/users/abc', {
+    method: 'PATCH',
+    token: adminToken,
+    body: { role: 'user' },
+  });
+  assert.equal(invalidAdminUser.status, 400);
+});
+
 test('allows collaborator chat after board access is granted', async () => {
   if (!databaseAvailable || !httpAvailable) {
     return;

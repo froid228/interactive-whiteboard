@@ -1,4 +1,10 @@
 const API_URL = process.env.FUZZ_API_URL || 'http://localhost:5001/api';
+const RANDOM_FUZZ_CASES = Number(process.env.RANDOM_FUZZ_CASES || 80);
+const stats = {
+  pass: 0,
+  warn: 0,
+  error: 0,
+};
 
 function randomEmail(prefix = 'fuzz') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
@@ -35,6 +41,7 @@ async function runCase(name, config, expectedStatuses = []) {
     const result = await request(config.path, config);
     const ok = expectedStatuses.length === 0 || expectedStatuses.includes(result.status);
     const marker = ok ? 'PASS' : 'WARN';
+    stats[ok ? 'pass' : 'warn'] += 1;
 
     console.log(
       `[${marker}] ${name} -> ${result.status} ${JSON.stringify(result.data)}`
@@ -42,8 +49,98 @@ async function runCase(name, config, expectedStatuses = []) {
 
     return result;
   } catch (error) {
+    stats.error += 1;
     console.log(`[ERROR] ${name} -> ${error.message}`);
     return null;
+  }
+}
+
+function randomPrimitive() {
+  const values = [
+    null,
+    true,
+    false,
+    0,
+    -1,
+    1.25,
+    '',
+    ' ',
+    'x'.repeat(1024),
+    '<script>alert(1)</script>',
+    "' OR '1'='1",
+    ['array'],
+    { nested: true },
+  ];
+  return values[Math.floor(Math.random() * values.length)];
+}
+
+function randomBadPayload() {
+  return {
+    name: randomPrimitive(),
+    email: randomPrimitive(),
+    password: randomPrimitive(),
+    title: randomPrimitive(),
+    description: randomPrimitive(),
+    text: randomPrimitive(),
+    unexpected: randomPrimitive(),
+  };
+}
+
+async function runRandomizedFuzzing({ token, boardId }) {
+  console.log(`\n=== RANDOMIZED PAYLOAD FUZZING (${RANDOM_FUZZ_CASES} cases) ===`);
+
+  const targets = [
+    () => ({
+      name: 'random.register',
+      config: {
+        path: '/auth/register',
+        method: 'POST',
+        body: randomBadPayload(),
+      },
+      expected: [400, 403, 409],
+    }),
+    () => ({
+      name: 'random.login',
+      config: {
+        path: '/auth/login',
+        method: 'POST',
+        body: randomBadPayload(),
+      },
+      expected: [400, 401, 403],
+    }),
+    () => ({
+      name: 'random.boards.create',
+      config: {
+        path: '/boards',
+        method: 'POST',
+        token,
+        body: randomBadPayload(),
+      },
+      expected: [400, 401, 403],
+    }),
+    () => ({
+      name: 'random.boards.invalid-id',
+      config: {
+        path: `/boards/${encodeURIComponent(String(randomPrimitive()))}`,
+        token,
+      },
+      expected: [400, 401, 403, 404],
+    }),
+    () => ({
+      name: 'random.chat.message',
+      config: {
+        path: `/chat/${boardId || 'bad'}/messages`,
+        method: 'POST',
+        token,
+        body: randomBadPayload(),
+      },
+      expected: [400, 401, 403, 404],
+    }),
+  ];
+
+  for (let index = 0; index < RANDOM_FUZZ_CASES; index += 1) {
+    const target = targets[Math.floor(Math.random() * targets.length)]();
+    await runCase(`${target.name}.${index + 1}`, target.config, target.expected);
   }
 }
 
@@ -532,9 +629,12 @@ async function main() {
     );
   }
 
+  await runRandomizedFuzzing({ token: aliceToken, boardId: fuzzBoardId });
+
   console.log('\n=== SUMMARY ===');
-  console.log('Проверены auth, boards, доступы, ограничения длины, типы данных, невалидные токены и сценарии с чужими правами.');
-  console.log('Для отчёта можно приложить консольный вывод этого скрипта как базовый результат фаззинг-тестирования API.\n');
+  console.log(`PASS: ${stats.pass}; WARN: ${stats.warn}; ERROR: ${stats.error}`);
+  console.log('Проверены auth, boards, доступы, ограничения длины, типы данных, невалидные токены, сценарии с чужими правами и randomized payload fuzzing.');
+  console.log('Для отчёта можно приложить консольный вывод этого скрипта как результат негативного, граничного и рандомизированного фаззинг-тестирования API.\n');
 }
 
 main();

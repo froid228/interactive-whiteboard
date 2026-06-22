@@ -2,7 +2,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const { initDatabase } = require('./config/db');
 const { configureSockets } = require('./socket');
 const { app, allowedOrigins } = require('./app');
 const server = http.createServer(app);
@@ -20,7 +19,6 @@ configureSockets(io);
 
 async function start() {
   try {
-    await initDatabase();
     server.listen(PORT, () => {
       console.log(`API listening on http://localhost:${PORT}`);
     });

@@ -60,6 +60,7 @@ README.md
 cd server
 npm install
 cp .env.example .env
+npm run db:init
 npm run dev
 ```
 
@@ -88,6 +89,7 @@ docker compose up --build
 - `client` на `http://localhost:3000`
 - `server` на `http://localhost:5001`
 - `postgres` на `localhost:5432`
+- `db-init` одноразово создает схему БД и seed-данные перед запуском `server`
 
 ## Переменные окружения
 
@@ -166,6 +168,15 @@ cd server
 npm run test:coverage
 ```
 
+### Database init
+
+```bash
+cd server
+npm run db:init
+```
+
+Команда создает/обновляет схему PostgreSQL и добавляет тестовых пользователей. Runtime-запуск `npm start` только поднимает API-сервер.
+
 Команда использует встроенное покрытие Node.js test runner и выводит отчет по покрытию backend-файлов.
 
 ### Frontend
@@ -209,3 +220,4 @@ npm run fuzz
 - ошибки при выдаче доступа и повторной выдаче доступа
 - удаление несуществующего участника
 - активность `/boards/activity` под авторизованным пользователем
+- рандомизированные payload-проверки для auth, boards, chat и невалидных идентификаторов

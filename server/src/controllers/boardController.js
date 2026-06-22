@@ -1,6 +1,10 @@
 const Board = require('../models/Board');
 const User = require('../models/User');
-const { validateBoardDescription, validateBoardTitle } = require('../utils/validators');
+const {
+  parsePositiveInt,
+  validateBoardDescription,
+  validateBoardTitle,
+} = require('../utils/validators');
 
 class BoardController {
   async create(req, res) {
@@ -40,7 +44,11 @@ class BoardController {
   }
 
   async getById(req, res) {
-    const boardId = Number(req.params.id);
+    const boardId = parsePositiveInt(req.params.id);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const hasAccess = await Board.userHasAccess(boardId, req.user);
 
     if (!hasAccess) {
@@ -56,7 +64,11 @@ class BoardController {
   }
 
   async update(req, res) {
-    const boardId = Number(req.params.id);
+    const boardId = parsePositiveInt(req.params.id);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const { title, description } = req.body;
 
     if (title === undefined && description === undefined) {
@@ -114,7 +126,11 @@ class BoardController {
   }
 
   async delete(req, res) {
-    const boardId = Number(req.params.id);
+    const boardId = parsePositiveInt(req.params.id);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const canManage = await Board.canManage(boardId, req.user);
 
     if (!canManage) {
@@ -134,7 +150,11 @@ class BoardController {
   }
 
   async share(req, res) {
-    const boardId = Number(req.params.id);
+    const boardId = parsePositiveInt(req.params.id);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const { email } = req.body;
 
     const canManage = await Board.canManage(boardId, req.user);
@@ -178,8 +198,14 @@ class BoardController {
   }
 
   async removeCollaborator(req, res) {
-    const boardId = Number(req.params.id);
-    const userId = Number(req.params.userId);
+    const boardId = parsePositiveInt(req.params.id);
+    const userId = parsePositiveInt(req.params.userId);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+    if (!userId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор пользователя' });
+    }
 
     const canManage = await Board.canManage(boardId, req.user);
     if (!canManage) {

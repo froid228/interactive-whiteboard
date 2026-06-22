@@ -8,6 +8,20 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: whiteboard
+          POSTGRES_USER: whiteboard
+          POSTGRES_PASSWORD: whiteboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U whiteboard -d whiteboard"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +50,14 @@ jobs:
       - name: Test server
         run: npm test
         working-directory: server
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whiteboard
+          DB_USER: whiteboard
+          DB_PASSWORD: whiteboard
+          JWT_SECRET: ci-secret-key
+          NODE_ENV: test
 
       - name: Build client
         run: npm run build

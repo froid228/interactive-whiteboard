@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { parsePositiveInt } = require('../utils/validators');
 
 class AdminController {
   async getUsers(req, res) {
@@ -7,7 +8,11 @@ class AdminController {
   }
 
   async updateUser(req, res) {
-    const userId = Number(req.params.id);
+    const userId = parsePositiveInt(req.params.id);
+    if (!userId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор пользователя' });
+    }
+
     const { role, isActive } = req.body;
 
     if (role !== undefined && !['admin', 'user'].includes(role)) {
@@ -31,7 +36,10 @@ class AdminController {
   }
 
   async deleteUser(req, res) {
-    const userId = Number(req.params.id);
+    const userId = parsePositiveInt(req.params.id);
+    if (!userId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор пользователя' });
+    }
 
     if (Number(req.user.id) === userId) {
       return res.status(400).json({ message: 'Нельзя удалить текущего пользователя' });

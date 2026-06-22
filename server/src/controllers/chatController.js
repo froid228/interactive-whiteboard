@@ -1,10 +1,14 @@
 const Board = require('../models/Board');
 const Message = require('../models/Message');
-const { validateMessageText } = require('../utils/validators');
+const { parsePositiveInt, validateMessageText } = require('../utils/validators');
 
 class ChatController {
   async getMessages(req, res) {
-    const boardId = Number(req.params.boardId);
+    const boardId = parsePositiveInt(req.params.boardId);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const hasAccess = await Board.userHasAccess(boardId, req.user);
 
     if (!hasAccess) {
@@ -16,7 +20,11 @@ class ChatController {
   }
 
   async createMessage(req, res) {
-    const boardId = Number(req.params.boardId);
+    const boardId = parsePositiveInt(req.params.boardId);
+    if (!boardId) {
+      return res.status(400).json({ message: 'Некорректный идентификатор доски' });
+    }
+
     const { text } = req.body;
     const hasAccess = await Board.userHasAccess(boardId, req.user);
 

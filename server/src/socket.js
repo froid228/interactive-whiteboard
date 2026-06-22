@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 const Board = require('./models/Board');
 const Message = require('./models/Message');
-const { validateMessageText } = require('./utils/validators');
+const {
+  parsePositiveInt,
+  validateBoardSnapshot,
+  validateDrawSegment,
+  validateMessageText,
+} = require('./utils/validators');
 const { getJwtSecret } = require('./utils/jwtSecret');
 
 function roomName(boardId) {
@@ -27,7 +32,12 @@ function configureSockets(io) {
   io.on('connection', (socket) => {
     socket.on('join-board', async ({ boardId }, callback = () => {}) => {
       try {
-        const numericBoardId = Number(boardId);
+        const numericBoardId = parsePositiveInt(boardId);
+        if (!numericBoardId) {
+          callback({ ok: false, message: 'Некорректный идентификатор доски' });
+          return;
+        }
+
         const hasAccess = await Board.userHasAccess(numericBoardId, socket.user);
 
         if (!hasAccess) {
@@ -43,40 +53,76 @@ function configureSockets(io) {
       }
     });
 
-    socket.on('draw-segment', async ({ boardId, segment }) => {
-      const numericBoardId = Number(boardId);
+    socket.on('draw-segment', async ({ boardId, segment }, callback = () => {}) => {
+      const numericBoardId = parsePositiveInt(boardId);
+      if (!numericBoardId) {
+        callback({ ok: false, message: 'Некорректный идентификатор доски' });
+        return;
+      }
+
+      if (!validateDrawSegment(segment)) {
+        callback({ ok: false, message: 'Некорректный сегмент рисования' });
+        return;
+      }
+
       if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
+        callback({ ok: false, message: 'Нет доступа к доске' });
         return;
       }
 
       socket.to(roomName(numericBoardId)).emit('draw-segment', { segment });
+      callback({ ok: true });
     });
 
-    socket.on('board-snapshot', async ({ boardId, snapshot }) => {
-      const numericBoardId = Number(boardId);
-      if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
+    socket.on('board-snapshot', async ({ boardId, snapshot }, callback = () => {}) => {
+      const numericBoardId = parsePositiveInt(boardId);
+      if (!numericBoardId) {
+        callback({ ok: false, message: 'Некорректный идентификатор доски' });
         return;
       }
 
-      await Board.updateSnapshot(numericBoardId, Array.isArray(snapshot) ? snapshot : []);
+      if (!validateBoardSnapshot(snapshot)) {
+        callback({ ok: false, message: 'Некорректное состояние доски' });
+        return;
+      }
+
+      if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
+        callback({ ok: false, message: 'Нет доступа к доске' });
+        return;
+      }
+
+      await Board.updateSnapshot(numericBoardId, snapshot);
       socket.to(roomName(numericBoardId)).emit('board-snapshot', {
-        snapshot: Array.isArray(snapshot) ? snapshot : [],
+        snapshot,
       });
+      callback({ ok: true });
     });
 
-    socket.on('clear-board', async ({ boardId }) => {
-      const numericBoardId = Number(boardId);
+    socket.on('clear-board', async ({ boardId }, callback = () => {}) => {
+      const numericBoardId = parsePositiveInt(boardId);
+      if (!numericBoardId) {
+        callback({ ok: false, message: 'Некорректный идентификатор доски' });
+        return;
+      }
+
       if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
+        callback({ ok: false, message: 'Нет доступа к доске' });
         return;
       }
 
       await Board.updateSnapshot(numericBoardId, []);
       io.to(roomName(numericBoardId)).emit('clear-board');
+      callback({ ok: true });
     });
 
     socket.on('send-message', async ({ boardId, text }, callback = () => {}) => {
       try {
-        const numericBoardId = Number(boardId);
+        const numericBoardId = parsePositiveInt(boardId);
+        if (!numericBoardId) {
+          callback({ ok: false, message: 'Некорректный идентификатор доски' });
+          return;
+        }
+
         if (!(await Board.userHasAccess(numericBoardId, socket.user))) {
           callback({ ok: false, message: 'Нет доступа к чату этой доски' });
           return;

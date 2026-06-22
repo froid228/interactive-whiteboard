@@ -13,12 +13,29 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  server:
+  db-init:
     build:
       context: ./server
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: whiteboard
+      DB_USER: whiteboard
+      DB_PASSWORD: whiteboard
+      JWT_SECRET: super-secret-key
+      NODE_ENV: development
+    command: npm run db:init
+    restart: "no"
+
+  server:
+    build:
+      context: ./server
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     environment:
       PORT: 5001
       CLIENT_ORIGIN: http://localhost:3000
