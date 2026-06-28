@@ -168,6 +168,16 @@ cd server
 npm run test:coverage
 ```
 
+### Fuzzing
+
+```bash
+cd server
+npm run fuzz
+npm run fuzz:socket
+```
+
+`npm run fuzz` проверяет REST API, а `npm run fuzz:socket` проверяет Socket.IO handshake и realtime-события доски. Для последовательного запуска обоих сценариев используется `npm run fuzz:all`.
+
 ### Database init
 
 ```bash
